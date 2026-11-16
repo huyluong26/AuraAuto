@@ -49,10 +49,106 @@ async def lifespan(app: FastAPI):
     yield
 
 
+TAGS_METADATA = [
+    {
+        "name": "Authentication",
+        "description": "Đăng ký tài khoản, đăng nhập JWT, đổi mật khẩu, xác thực email và Google OAuth identity.",
+    },
+    {
+        "name": "Users",
+        "description": "Quản lý hồ sơ cá nhân, đổi mật khẩu, xem trang hồ sơ người bán công khai (Seller Public Profile).",
+    },
+    {
+        "name": "Showrooms",
+        "description": "Hồ sơ đối tác Showroom / Salon xe hơi, danh sách showroom công khai và đăng ký nâng cấp đối tác.",
+    },
+    {
+        "name": "Listings",
+        "description": "Đăng tin bán xe, quản lý tin cá nhân, sửa tin duyệt 2 bước (tin cũ hiển thị trong lúc chờ duyệt), đánh dấu đã bán.",
+    },
+    {
+        "name": "Catalog",
+        "description": "Danh mục thương hiệu xe toàn cầu, các dòng xe (Models), phiên bản và kiểu dáng tiêu chuẩn.",
+    },
+    {
+        "name": "AI",
+        "description": "Thẩm định định giá xe thông minh đa biến số và nhận diện hãng/dòng/năm sản xuất qua ảnh chụp với Google Gemini AI.",
+    },
+    {
+        "name": "Payments & Promotions",
+        "description": "Cấu hình gói đẩy tin nổi bật VIP, tạo URL thanh toán VNPay và xử lý webhook IPN xác thực giao dịch.",
+    },
+    {
+        "name": "Appointments",
+        "description": "Đặt lịch hẹn xem xe trực tiếp giữa người mua và người bán, xác nhận/hủy lịch hẹn kèm lý do.",
+    },
+    {
+        "name": "Chat",
+        "description": "Hệ thống tin nhắn trao đổi realtime trực tiếp theo từng tin đăng xe giữa người mua và người bán.",
+    },
+    {
+        "name": "Reviews",
+        "description": "Đánh giá sao và nhận xét uy tín người bán sau khi hoàn tất xem xe hoặc giao dịch.",
+    },
+    {
+        "name": "Favorites",
+        "description": "Quản lý danh sách xe yêu thích và theo dõi cập nhật giá của người dùng.",
+    },
+    {
+        "name": "Notifications",
+        "description": "Trung tâm thông báo hệ thống tự động: lịch hẹn, trạng thái duyệt tin, kích hoạt VIP, cảnh báo bảo mật.",
+    },
+    {
+        "name": "Admin",
+        "description": "Trung tâm quản trị toàn diện: Dashboard số liệu, duyệt tin xe & duyệt sửa tin, quản trị thành viên & showroom hàng loạt, xử lý lịch hẹn, cấu hình giá gói khuyến mãi.",
+    },
+    {
+        "name": "Trust & Reports",
+        "description": "Báo cáo tin đăng/người dùng vi phạm, xử lý kiểm duyệt nội dung, bằng chứng vi phạm và quy trình khiếu nại.",
+    },
+    {
+        "name": "Articles & News",
+        "description": "Bài viết cẩm nang, đánh giá thị trường ô tô cũ, kinh nghiệm mua bán và bảo dưỡng xe.",
+    },
+    {
+        "name": "Media",
+        "description": "Tải lên và tối ưu hóa hình ảnh xe độ phân giải cao, logo và banner thương hiệu qua Cloudinary CDN.",
+    },
+    {
+        "name": "System",
+        "description": "Kiểm tra tình trạng sức khỏe máy chủ và môi trường dịch vụ (Health Check).",
+    },
+]
+
+SWAGGER_DESCRIPTION = """
+## 🚗 AuraAuto API - Nền Tảng Mua Bán Ô Tô Cũ Tích Hợp AI & Gemini
+
+Chào mừng bạn đến với tài liệu API chính thức của **AuraAuto**. Hệ thống được xây dựng trên kiến trúc **Clean Architecture** hiện đại, cung cấp giải pháp toàn diện cho thị trường giao dịch ô tô cũ.
+
+---
+
+### 🌟 Các Tính Năng & Phân Hệ Trọng Tâm:
+1. **Quy Trình Duyệt Tin 2 Bước Chuyên Nghiệp:** Cho phép người bán chỉnh sửa tin đăng xe đã hiển thị mà không làm gián đoạn người xem. Tin cũ vẫn hiển thị công khai với dữ liệu hiện tại, phiên bản sửa đổi được lưu riêng để Admin xét duyệt trước khi áp dụng.
+2. **AI Car Valuation & Gemini Vision Recognition:** Ứng dụng mô hình AI định giá xe đa biến số kết hợp cùng mô hình **Google Gemini AI** nhận diện thông số xe (hãng, đời xe, năm sản xuất, kiểu dáng) trực tiếp từ hình ảnh thực tế.
+3. **Thanh Toán VNPay & Gói Tin Nổi Bật (VIP):** Người bán có thể mua các gói đẩy tin nổi bật (1 ngày, 3 ngày, 7 ngày, 30 ngày) thanh toán an toàn qua cổng VNPay với chữ ký điện tử HMAC-SHA512 và IPN webhook tự động kích hoạt.
+4. **Phân Hệ Showroom Đối Tác:** Hồ sơ nhận diện chuyên biệt dành cho Salon xe hơi chuyên nghiệp (logo, banner, hotline, địa chỉ tự động điền khi đăng tin).
+5. **Trung Tâm Quản Trị Admin Toàn Diện:** Quản lý số liệu KPI, duyệt tin, quản lý thành viên showroom với thao tác chọn nhiều xử lý hàng loạt, quản trị gói cước khuyến mãi.
+
+---
+
+### 🔐 Hướng Dẫn Xác Thực (Authentication):
+Hệ thống sử dụng chuẩn **JWT Bearer Token**. Để thử nghiệm các API yêu cầu quyền đăng nhập:
+1. Gọi `POST /api/v1/auth/login` với tài khoản:
+   - **Admin:** `admin@otocu.vn` | Mật khẩu: `Admin@123456`
+   - **Showroom:** `auto88@gmail.com` | Mật khẩu: `Auto88@123`
+2. Bấm nút **Authorize (🔓)** ở góc trên bên phải, dán `access_token` và bấm Xác nhận.
+"""
+
 app = FastAPI(
     title=settings.PROJECT_NAME,
     version="1.0.0",
-    description="Backend API cho Nền tảng Mua Bán Ô Tô Cũ Tích Hợp AI & Gemini",
+    description=SWAGGER_DESCRIPTION,
+    openapi_tags=TAGS_METADATA,
     lifespan=lifespan,
     docs_url="/docs",
     redoc_url="/redoc",
