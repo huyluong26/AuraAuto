@@ -1,0 +1,75 @@
+{
+  "model_name": "CatBoost Regressor",
+  "version": "2.0.0",
+  "trained_at": "2026-11-11T13:39:25Z",
+  "dataset_rows": 11741,
+  "target": "Price_Million (VNĐ)",
+  "categorical_features": [
+    "Brand",
+    "Model",
+    "Body_Type",
+    "Fuel_Type",
+    "Location_Region"
+  ],
+  "numerical_features": [
+    "Age",
+    "Odometer_Km",
+    "Mileage_Unknown",
+    "Engine_Displacement",
+    "Seats",
+    "Doors",
+    "Is_Imported"
+  ],
+  "metrics_summary": {
+    "Ridge_Regression": {
+      "MAE_Million": 220.88,
+      "MAE_VND": 220884396,
+      "RMSE_Million": 444.21,
+      "RMSE_VND": 444205605,
+      "R2_Score": 0.8473,
+      "MAPE_Percent": 56.76,
+      "Training_Time_Sec": 0.1
+    },
+    "Random_Forest": {
+      "MAE_Million": 93.61,
+      "MAE_VND": 93611745,
+      "RMSE_Million": 313.96,
+      "RMSE_VND": 313958535,
+      "R2_Score": 0.9237,
+      "MAPE_Percent": 14.48,
+      "Training_Time_Sec": 1.03
+    },
+    "CatBoost": {
+      "MAE_Million": 104.6,
+      "MAE_VND": 104600956,
+      "RMSE_Million": 244.41,
+      "RMSE_VND": 244407938,
+      "R2_Score": 0.9538,
+      "MAPE_Percent": 17.81,
+      "Training_Time_Sec": 27.53
+    }
+  },
+  "conformal_calibration": {
+    "method": "RELATIVE_CONFORMAL_RESIDUAL",
+    "q80_relative_ratio": 0.2134,
+    "q90_relative_ratio": 0.3111,
+    "q80_relative_percent": 21.34,
+    "q90_relative_percent": 31.11,
+    "test_coverage_90_percent": 89.73,
+    "legacy_q90_million": 198.42
+  },
+  "feature_importances": {
+    "Engine_Displacement": 38.0,
+    "Age": 22.78,
+    "Brand": 15.98,
+    "Odometer_Km": 6.04,
+    "Seats": 4.68,
+    "Model": 4.16,
+    "Is_Imported": 3.16,
+    "Body_Type": 2.72,
+    "Fuel_Type": 1.32,
+    "Doors": 0.49,
+    "Location_Region": 0.38,
+    "Mileage_Unknown": 0.29
+  }
+}

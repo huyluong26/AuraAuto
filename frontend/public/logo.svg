@@ -1,0 +1,49 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 260 60" fill="none">
+  <defs>
+    <linearGradient id="logoGold" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ebd5b3"/>
+      <stop offset="35%" stop-color="#b89b72"/>
+      <stop offset="70%" stop-color="#917349"/>
+      <stop offset="100%" stop-color="#725a37"/>
+    </linearGradient>
+    <linearGradient id="logoDark" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#242322"/>
+      <stop offset="50%" stop-color="#141312"/>
+      <stop offset="100%" stop-color="#0a0a0a"/>
+    </linearGradient>
+  </defs>
+
+  <!-- 1. Emblem Mark (Left) -->
+  <g transform="translate(6, 6) scale(0.48)">
+    <!-- Shield Base -->
+    <rect x="5" y="5" width="90" height="90" rx="24" fill="url(#logoDark)" stroke="url(#logoGold)" stroke-width="2.5"/>
+    <rect x="9" y="9" width="82" height="82" rx="20" fill="none" stroke="url(#logoGold)" stroke-width="0.8" stroke-opacity="0.45"/>
+    <circle cx="50" cy="44" r="26" fill="url(#logoGold)" fill-opacity="0.14"/>
+
+    <!-- Left Wing -->
+    <path d="M 50 18 L 27 72 Q 26 75.5 29.5 75.5 L 36.5 75.5 Q 39.5 75.5 41 72 L 46.5 56.5 L 50 46 L 50 18 Z" fill="url(#logoGold)"/>
+    <!-- Right Wing -->
+    <path d="M 50 18 L 73 72 Q 74 75.5 70.5 75.5 L 63.5 75.5 Q 60.5 75.5 59 72 L 53.5 56.5 L 50 46 L 50 18 Z" fill="url(#logoGold)" fill-opacity="0.82"/>
+    <!-- Center Cutout -->
+    <path d="M 50 27 L 39 65 L 43.5 65 L 50 47.5 L 56.5 65 L 61 65 Z" fill="#141312"/>
+    <!-- Crossbar Blade -->
+    <path d="M 32 58 C 42 55.5, 58 55.5, 68 58 L 65.5 61.5 C 56.5 59.5, 43.5 59.5, 34.5 61.5 Z" fill="url(#logoGold)"/>
+    <!-- Center Star Diamond -->
+    <polygon points="50,33 54,42.5 50,52 46,42.5" fill="#ffffff" opacity="0.95"/>
+    <polygon points="50,36 57.5,42.5 50,49 42.5,42.5" fill="#fde68a" opacity="0.8"/>
+  </g>
+
+  <!-- 2. Brand Wordmark Typography -->
+  <g transform="translate(68, 34)">
+    <text font-family="Manrope, Inter, system-ui, -apple-system, sans-serif" font-size="24" font-weight="700" letter-spacing="-0.6" fill="#1a1c1a">
+      Aura<tspan fill="#725a37">Auto</tspan>
+    </text>
+  </g>
+
+  <!-- 3. Luxury Tagline -->
+  <g transform="translate(69, 48)">
+    <text font-family="Inter, Manrope, system-ui, sans-serif" font-size="8.5" font-weight="600" letter-spacing="3.8" fill="#725a37">
+      LUXURY MOBILITY
+    </text>
+  </g>
+</svg>

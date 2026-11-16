@@ -1,0 +1,2817 @@
+{
+  "model_name": "CatBoost log-price",
+  "version": "3.0.0",
+  "trained_at": "2026-11-11T14:30:48Z",
+  "training_reference_year": 2026,
+  "target_transform": "log1p",
+  "dataset_rows": 11741,
+  "split_rows": {
+    "train": 6456,
+    "validation": 1761,
+    "calibration": 1762,
+    "test": 1762
+  },
+  "categorical_features": [
+    "Brand",
+    "Model",
+    "Variant",
+    "Body_Type",
+    "Fuel_Type",
+    "Location_Region"
+  ],
+  "numerical_features": [
+    "Age",
+    "Odometer_Km",
+    "Mileage_Unknown",
+    "Engine_Displacement",
+    "Engine_Unknown",
+    "Seats",
+    "Doors",
+    "Is_Imported"
+  ],
+  "metrics_summary": {
+    "baseline": {
+      "MAE_Million": 104.6,
+      "MAE_VND": 104600956,
+      "RMSE_Million": 244.41,
+      "RMSE_VND": 244407938,
+      "R2_Score": 0.9538,
+      "MAPE_Percent": 17.81
+    },
+    "optimized": {
+      "MAE_Million": 116.48,
+      "MAE_VND": 116475367,
+      "RMSE_Million": 314.97,
+      "RMSE_VND": 314966917,
+      "R2_Score": 0.9232,
+      "MAPE_Percent": 12.47
+    }
+  },
+  "price_band_metrics": {
+    "baseline": {
+      "under_300m": {
+        "count": 436,
+        "MAE_Million": 47.53,
+        "MAE_VND": 47530987,
+        "RMSE_Million": 97.19,
+        "RMSE_VND": 97185820,
+        "R2_Score": -0.8456,
+        "MAPE_Percent": 35.66
+      },
+      "300m_to_700m": {
+        "count": 826,
+        "MAE_Million": 50.03,
+        "MAE_VND": 50027965,
+        "RMSE_Million": 80.95,
+        "RMSE_VND": 80948721,
+        "R2_Score": 0.4448,
+        "MAPE_Percent": 10.99
+      },
+      "700m_to_1_5b": {
+        "count": 287,
+        "MAE_Million": 138.82,
+        "MAE_VND": 138817375,
+        "RMSE_Million": 276.8,
+        "RMSE_VND": 276799648,
+        "R2_Score": -0.3666,
+        "MAPE_Percent": 14.0
+      },
+      "1_5b_to_3b": {
+        "count": 143,
+        "MAE_Million": 301.37,
+        "MAE_VND": 301374082,
+        "RMSE_Million": 409.39,
+        "RMSE_VND": 409386723,
+        "R2_Score": 0.0335,
+        "MAPE_Percent": 14.34
+      },
+      "over_3b": {
+        "count": 70,
+        "MAE_Million": 561.76,
+        "MAE_VND": 561759925,
+        "RMSE_Million": 843.18,
+        "RMSE_VND": 843183515,
+        "R2_Score": 0.8529,
+        "MAPE_Percent": 9.82
+      }
+    },
+    "optimized": {
+      "under_300m": {
+        "count": 436,
+        "MAE_Million": 25.17,
+        "MAE_VND": 25167130,
+        "RMSE_Million": 37.4,
+        "RMSE_VND": 37397515,
+        "R2_Score": 0.7267,
+        "MAPE_Percent": 16.21
+      },
+      "300m_to_700m": {
+        "count": 826,
+        "MAE_Million": 41.27,
+        "MAE_VND": 41265657,
+        "RMSE_Million": 52.14,
+        "RMSE_VND": 52135003,
+        "R2_Score": 0.7697,
+        "MAPE_Percent": 9.02
+      },
+      "700m_to_1_5b": {
+        "count": 287,
+        "MAE_Million": 142.57,
+        "MAE_VND": 142568962,
+        "RMSE_Million": 191.8,
+        "RMSE_VND": 191804180,
+        "R2_Score": 0.3438,
+        "MAPE_Percent": 13.69
+      },
+      "1_5b_to_3b": {
+        "count": 143,
+        "MAE_Million": 334.12,
+        "MAE_VND": 334123640,
+        "RMSE_Million": 400.51,
+        "RMSE_VND": 400505229,
+        "R2_Score": 0.075,
+        "MAPE_Percent": 15.97
+      },
+      "over_3b": {
+        "count": 70,
+        "MAE_Million": 1021.06,
+        "MAE_VND": 1021061734,
+        "RMSE_Million": 1406.35,
+        "RMSE_VND": 1406345821,
+        "R2_Score": 0.5907,
+        "MAPE_Percent": 17.8
+      }
+    }
+  },
+  "conformal_calibration": {
+    "method": "SPLIT_RELATIVE_CONFORMAL",
+    "q90_relative_ratio": 0.27800408148580147,
+    "test_coverage_90_percent": 88.37
+  },
+  "support_by_brand_model": {
+    "Acura|Mdx": {
+      "count": 1,
+      "min_year": 2008,
+      "max_year": 2008,
+      "max_odo": 130000.0,
+      "median_engine": 3.7,
+      "median_price_million": 265.0
+    },
+    "Acura|Zdx": {
+      "count": 2,
+      "min_year": 2009,
+      "max_year": 2011,
+      "max_odo": 84000.0,
+      "median_engine": 3.7,
+      "median_price_million": 538.5
+    },
+    "Audi|A1": {
+      "count": 4,
+      "min_year": 2010,
+      "max_year": 2010,
+      "max_odo": 240000.0,
+      "median_engine": 1.4,
+      "median_price_million": 260.0
+    },
+    "Audi|A3": {
+      "count": 1,
+      "min_year": 2014,
+      "max_year": 2014,
+      "max_odo": 84000.0,
+      "median_engine": 1.8,
+      "median_price_million": 333.0
+    },
+    "Audi|A4": {
+      "count": 5,
+      "min_year": 2015,
+      "max_year": 2024,
+      "max_odo": 165000.0,
+      "median_engine": 2.0,
+      "median_price_million": 610.0
+    },
+    "Audi|A5": {
+      "count": 7,
+      "min_year": 2008,
+      "max_year": 2017,
+      "max_odo": 110000.0,
+      "median_engine": 2.0,
+      "median_price_million": 531.0
+    },
+    "Audi|A6": {
+      "count": 7,
+      "min_year": 2014,
+      "max_year": 2021,
+      "max_odo": 180000.0,
+      "median_engine": 2.0,
+      "median_price_million": 619.0
+    },
+    "Audi|A7": {
+      "count": 2,
+      "min_year": 2011,
+      "max_year": 2014,
+      "max_odo": 180000.0,
+      "median_engine": 3.0,
+      "median_price_million": 810.0
+    },
+    "Audi|A8": {
+      "count": 3,
+      "min_year": 2011,
+      "max_year": 2014,
+      "max_odo": 225000.0,
+      "median_engine": 4.0,
+      "median_price_million": 846.0
+    },
+    "Audi|Q2": {
+      "count": 1,
+      "min_year": 2017,
+      "max_year": 2017,
+      "max_odo": 63000.0,
+      "median_engine": 1.4,
+      "median_price_million": 628.0
+    },
+    "Audi|Q3": {
+      "count": 2,
+      "min_year": 2020,
+      "max_year": 2021,
+      "max_odo": 26686.0,
+      "median_engine": 1.4,
+      "median_price_million": 1016.5
+    },
+    "Audi|Q5": {
+      "count": 16,
+      "min_year": 2009,
+      "max_year": 2022,
+      "max_odo": 225000.0,
+      "median_engine": 2.0,
+      "median_price_million": 583.5
+    },
+    "Audi|Q7": {
+      "count": 15,
+      "min_year": 2008,
+      "max_year": 2020,
+      "max_odo": 240000.0,
+      "median_engine": 3.0,
+      "median_price_million": 697.0
+    },
+    "Audi|Q8": {
+      "count": 3,
+      "min_year": 2020,
+      "max_year": 2021,
+      "max_odo": 35000.0,
+      "median_engine": 3.0,
+      "median_price_million": 2471.0
+    },
+    "Audi|R8": {
+      "count": 3,
+      "min_year": 2015,
+      "max_year": 2015,
+      "max_odo": 165000.0,
+      "median_engine": 5.2,
+      "median_price_million": 6189.0
+    },
+    "Audi|TT": {
+      "count": 3,
+      "min_year": 2007,
+      "max_year": 2020,
+      "max_odo": 95000.0,
+      "median_engine": 4.0,
+      "median_price_million": 6008.0
+    },
+    "BMW|3 Series": {
+      "count": 36,
+      "min_year": 2002,
+      "max_year": 2023,
+      "max_odo": 330000.0,
+      "median_engine": 2.0,
+      "median_price_million": 397.0
+    },
+    "BMW|4 Series": {
+      "count": 3,
+      "min_year": 2015,
+      "max_year": 2023,
+      "max_odo": 115000.0,
+      "median_engine": 2.0,
+      "median_price_million": 2179.0
+    },
+    "BMW|5 Series": {
+      "count": 40,
+      "min_year": 1996,
+      "max_year": 2022,
+      "max_odo": 900000.0,
+      "median_engine": 2.0,
+      "median_price_million": 724.5
+    },
+    "BMW|6 Series": {
+      "count": 3,
+      "min_year": 2015,
+      "max_year": 2017,
+      "max_odo": 165000.0,
+      "median_engine": 3.0,
+      "median_price_million": 1533.0
+    },
+    "BMW|7 Series": {
+      "count": 18,
+      "min_year": 2005,
+      "max_year": 2023,
+      "max_odo": 315000.0,
+      "median_engine": 2.0,
+      "median_price_million": 1723.5
+    },
+    "BMW|M6": {
+      "count": 2,
+      "min_year": 2008,
+      "max_year": 2008,
+      "max_odo": 270000.0,
+      "median_engine": 5.0,
+      "median_price_million": 854.0
+    },
+    "BMW|X1": {
+      "count": 1,
+      "min_year": 2010,
+      "max_year": 2010,
+      "max_odo": 240000.0,
+      "median_engine": 2.0,
+      "median_price_million": 270.0
+    },
+    "BMW|X3": {
+      "count": 8,
+      "min_year": 2011,
+      "max_year": 2022,
+      "max_odo": 180000.0,
+      "median_engine": 2.0,
+      "median_price_million": 1145.0
+    },
+    "BMW|X4": {
+      "count": 5,
+      "min_year": 2014,
+      "max_year": 2021,
+      "max_odo": 110000.0,
+      "median_engine": 2.0,
+      "median_price_million": 1299.0
+    },
+    "BMW|X5": {
+      "count": 5,
+      "min_year": 2007,
+      "max_year": 2020,
+      "max_odo": 100100.0,
+      "median_engine": 3.0,
+      "median_price_million": 920.0
+    },
+    "BMW|X6": {
+      "count": 10,
+      "min_year": 2008,
+      "max_year": 2022,
+      "max_odo": 270000.0,
+      "median_engine": 3.0,
+      "median_price_million": 842.0
+    },
+    "BMW|X7": {
+      "count": 3,
+      "min_year": 2020,
+      "max_year": 2020,
+      "max_odo": 48270.0,
+      "median_engine": 3.0,
+      "median_price_million": 3304.0
+    },
+    "BMW|Z4": {
+      "count": 5,
+      "min_year": 2015,
+      "max_year": 2021,
+      "max_odo": 165000.0,
+      "median_engine": 2.0,
+      "median_price_million": 1681.0
+    },
+    "Baic|Beijing": {
+      "count": 1,
+      "min_year": 2022,
+      "max_year": 2022,
+      "max_odo": 37000.0,
+      "median_engine": 1.5,
+      "median_price_million": 306.0
+    },
+    "Bentley|Bentayga": {
+      "count": 1,
+      "min_year": 2020,
+      "max_year": 2020,
+      "max_odo": 30000.0,
+      "median_engine": 4.0,
+      "median_price_million": 9689.0
+    },
+    "Bentley|Continental": {
+      "count": 4,
+      "min_year": 2006,
+      "max_year": 2008,
+      "max_odo": 123456.0,
+      "median_engine": 6.0,
+      "median_price_million": 1774.0
+    },
+    "Bentley|Flying": {
+      "count": 6,
+      "min_year": 2008,
+      "max_year": 2016,
+      "max_odo": 270000.0,
+      "median_engine": 6.0,
+      "median_price_million": 4527.0
+    },
+    "Bentley|Mulsanne": {
+      "count": 9,
+      "min_year": 2011,
+      "max_year": 2018,
+      "max_odo": 195000.0,
+      "median_engine": 6.8,
+      "median_price_million": 6972.0
+    },
+    "Byd|F0": {
+      "count": 2,
+      "min_year": 2011,
+      "max_year": 2011,
+      "max_odo": 225000.0,
+      "median_engine": 1.0,
+      "median_price_million": 51.0
+    },
+    "Cadillac|Cts": {
+      "count": 2,
+      "min_year": 2008,
+      "max_year": 2008,
+      "max_odo": 270000.0,
+      "median_engine": 3.3,
+      "median_price_million": 475.5
+    },
+    "Cadillac|Escalade": {
+      "count": 4,
+      "min_year": 2014,
+      "max_year": 2016,
+      "max_odo": 80000.0,
+      "median_engine": 6.2,
+      "median_price_million": 2088.0
+    },
+    "Chevrolet|Aveo": {
+      "count": 12,
+      "min_year": 2012,
+      "max_year": 2018,
+      "max_odo": 210000.0,
+      "median_engine": 1.5,
+      "median_price_million": 146.0
+    },
+    "Chevrolet|Camaro": {
+      "count": 4,
+      "min_year": 2011,
+      "max_year": 2017,
+      "max_odo": 225000.0,
+      "median_engine": 2.0,
+      "median_price_million": 1346.5
+    },
+    "Chevrolet|Captiva": {
+      "count": 21,
+      "min_year": 2007,
+      "max_year": 2018,
+      "max_odo": 285000.0,
+      "median_engine": 2.4,
+      "median_price_million": 153.0
+    },
+    "Chevrolet|Colorado": {
+      "count": 19,
+      "min_year": 2015,
+      "max_year": 2019,
+      "max_odo": 165000.0,
+      "median_engine": 2.5,
+      "median_price_million": 311.0
+    },
+    "Chevrolet|Cruze": {
+      "count": 24,
+      "min_year": 2010,
+      "max_year": 2018,
+      "max_odo": 240000.0,
+      "median_engine": 1.6,
+      "median_price_million": 199.5
+    },
+    "Chevrolet|Lacetti": {
+      "count": 3,
+      "min_year": 2011,
+      "max_year": 2012,
+      "max_odo": 225000.0,
+      "median_engine": 1.6,
+      "median_price_million": 114.0
+    },
+    "Chevrolet|Orlando": {
+      "count": 2,
+      "min_year": 2012,
+      "max_year": 2017,
+      "max_odo": 100000.0,
+      "median_engine": 1.8,
+      "median_price_million": 213.0
+    },
+    "Chevrolet|Spark": {
+      "count": 43,
+      "min_year": 2008,
+      "max_year": 2018,
+      "max_odo": 270000.0,
+      "median_engine": 1.0,
+      "median_price_million": 101.0
+    },
+    "Chevrolet|Tahoe": {
+      "count": 1,
+      "min_year": 2007,
+      "max_year": 2007,
+      "max_odo": 285000.0,
+      "median_engine": 5.3,
+      "median_price_million": 783.0
+    },
+    "Chevrolet|Trailblazer": {
+      "count": 11,
+      "min_year": 2018,
+      "max_year": 2019,
+      "max_odo": 135000.0,
+      "median_engine": 2.5,
+      "median_price_million": 417.0
+    },
+    "Chevrolet|Trax": {
+      "count": 1,
+      "min_year": 2016,
+      "max_year": 2016,
+      "max_odo": 150000.0,
+      "median_engine": 1.4,
+      "median_price_million": 276.0
+    },
+    "Chevrolet|Vivant": {
+      "count": 6,
+      "min_year": 2008,
+      "max_year": 2009,
+      "max_odo": 270000.0,
+      "median_engine": 2.0,
+      "median_price_million": 110.0
+    },
+    "Daewoo|Gentra": {
+      "count": 7,
+      "min_year": 2007,
+      "max_year": 2011,
+      "max_odo": 285000.0,
+      "median_engine": 1.5,
+      "median_price_million": 80.0
+    },
+    "Daewoo|Lacetti": {
+      "count": 24,
+      "min_year": 2007,
+      "max_year": 2011,
+      "max_odo": 285000.0,
+      "median_engine": 1.6,
+      "median_price_million": 135.0
+    },
+    "Daewoo|Lanos": {
+      "count": 1,
+      "min_year": 2004,
+      "max_year": 2004,
+      "max_odo": 100000.0,
+      "median_engine": 1.5,
+      "median_price_million": 62.0
+    },
+    "Daewoo|Matiz": {
+      "count": 1,
+      "min_year": 2010,
+      "max_year": 2010,
+      "max_odo": 80000.0,
+      "median_engine": 1.0,
+      "median_price_million": 129.0
+    },
+    "Daewoo|Nubira": {
+      "count": 1,
+      "min_year": 2000,
+      "max_year": 2000,
+      "max_odo": 390000.0,
+      "median_engine": 1.6,
+      "median_price_million": 74.0
+    },
+    "Daewoo|Other": {
+      "count": 1,
+      "min_year": 2015,
+      "max_year": 2015,
+      "max_odo": 150000.0,
+      "median_engine": 2.0,
+      "median_price_million": 544.0
+    },
+    "Daihatsu|Terios": {
+      "count": 1,
+      "min_year": 2004,
+      "max_year": 2004,
+      "max_odo": 120000.0,
+      "median_engine": 1.3,
+      "median_price_million": 108.0
+    },
+    "Dodge|Journey": {
+      "count": 1,
+      "min_year": 2009,
+      "max_year": 2009,
+      "max_odo": 78600.0,
+      "median_engine": 2.7,
+      "median_price_million": 306.0
+    },
+    "Dongben|Db": {
+      "count": 2,
+      "min_year": 2018,
+      "max_year": 2019,
+      "max_odo": 120000.0,
+      "median_engine": 1.5,
+      "median_price_million": 99.5
+    },
+    "Dongben|Db1021": {
+      "count": 1,
+      "min_year": 2018,
+      "max_year": 2018,
+      "max_odo": 120000.0,
+      "median_engine": 2.0,
+      "median_price_million": 60.0
+    },
+    "Dongfeng|Other": {
+      "count": 1,
+      "min_year": 2015,
+      "max_year": 2015,
+      "max_odo": 10000.0,
+      "median_engine": 2.0,
+      "median_price_million": 274.0
+    },
+    "Fairy|Other": {
+      "count": 1,
+      "min_year": 2007,
+      "max_year": 2007,
+      "max_odo": 285000.0,
+      "median_engine": 2.0,
+      "median_price_million": 61.0
+    },
+    "Ferrari|California": {
+      "count": 1,
+      "min_year": 2014,
+      "max_year": 2014,
+      "max_odo": 15000.0,
+      "median_engine": 3.9,
+      "median_price_million": 6267.0
+    },
+    "Fiat|500": {
+      "count": 1,
+      "min_year": 2009,
+      "max_year": 2009,
+      "max_odo": 70000.0,
+      "median_engine": 0.9,
+      "median_price_million": 282.0
+    },
+    "Fiat|Albea": {
+      "count": 1,
+      "min_year": 2004,
+      "max_year": 2004,
+      "max_odo": 180000.0,
+      "median_engine": 1.2,
+      "median_price_million": 63.0
+    },
+    "Fiat|Doblo": {
+      "count": 1,
+      "min_year": 2003,
+      "max_year": 2003,
+      "max_odo": 28000.0,
+      "median_engine": 1.6,
+      "median_price_million": 67.0
+    },
+    "Ford|Ecosport": {
+      "count": 60,
+      "min_year": 2014,
+      "max_year": 2021,
+      "max_odo": 150000.0,
+      "median_engine": 1.5,
+      "median_price_million": 312.0
+    },
+    "Ford|Escape": {
+      "count": 13,
+      "min_year": 2003,
+      "max_year": 2013,
+      "max_odo": 255000.0,
+      "median_engine": 2.3,
+      "median_price_million": 192.0
+    },
+    "Ford|Everest": {
+      "count": 115,
+      "min_year": 2005,
+      "max_year": 2023,
+      "max_odo": 20000000.0,
+      "median_engine": 2.0,
+      "median_price_million": 695.0
+    },
+    "Ford|Explorer": {
+      "count": 20,
+      "min_year": 2017,
+      "max_year": 2022,
+      "max_odo": 150000.0,
+      "median_engine": 2.3,
+      "median_price_million": 1065.5
+    },
+    "Ford|F150": {
+      "count": 9,
+      "min_year": 2004,
+      "max_year": 2020,
+      "max_odo": 165000.0,
+      "median_engine": 3.5,
+      "median_price_million": 2967.0
+    },
+    "Ford|Fiesta": {
+      "count": 16,
+      "min_year": 2011,
+      "max_year": 2017,
+      "max_odo": 225000.0,
+      "median_engine": 1.25,
+      "median_price_million": 232.0
+    },
+    "Ford|Focus": {
+      "count": 23,
+      "min_year": 2010,
+      "max_year": 2019,
+      "max_odo": 700000.0,
+      "median_engine": 1.8,
+      "median_price_million": 233.0
+    },
+    "Ford|Imax": {
+      "count": 1,
+      "min_year": 2009,
+      "max_year": 2009,
+      "max_odo": 90000.0,
+      "median_engine": 2.0,
+      "median_price_million": 219.0
+    },
+    "Ford|Laser": {
+      "count": 4,
+      "min_year": 2002,
+      "max_year": 2004,
+      "max_odo": 360000.0,
+      "median_engine": 1.8,
+      "median_price_million": 80.0
+    },
+    "Ford|Mondeo": {
+      "count": 7,
+      "min_year": 2004,
+      "max_year": 2009,
+      "max_odo": 330000.0,
+      "median_engine": 2.5,
+      "median_price_million": 98.0
+    },
+    "Ford|Mustang": {
+      "count": 7,
+      "min_year": 2015,
+      "max_year": 2021,
+      "max_odo": 165000.0,
+      "median_engine": 2.3,
+      "median_price_million": 1472.0
+    },
+    "Ford|Ranger": {
+      "count": 182,
+      "min_year": 2003,
+      "max_year": 2024,
+      "max_odo": 1100000.0,
+      "median_engine": 2.2,
+      "median_price_million": 420.0
+    },
+    "Ford|Ranger Raptor": {
+      "count": 28,
+      "min_year": 2018,
+      "max_year": 2023,
+      "max_odo": 750000.0,
+      "median_engine": 2.0,
+      "median_price_million": 708.5
+    },
+    "Ford|Territory": {
+      "count": 14,
+      "min_year": 2022,
+      "max_year": 2024,
+      "max_odo": 25000.0,
+      "median_engine": 1.5,
+      "median_price_million": 620.5
+    },
+    "Ford|Tourneo": {
+      "count": 3,
+      "min_year": 2019,
+      "max_year": 2021,
+      "max_odo": 105000.0,
+      "median_engine": 2.0,
+      "median_price_million": 601.0
+    },
+    "Ford|Transit": {
+      "count": 29,
+      "min_year": 2009,
+      "max_year": 2023,
+      "max_odo": 450000.0,
+      "median_engine": 2.4,
+      "median_price_million": 368.0
+    },
+    "Gaz|Gazele": {
+      "count": 1,
+      "min_year": 2020,
+      "max_year": 2020,
+      "max_odo": 160000.0,
+      "median_engine": 2.8,
+      "median_price_million": 383.0
+    },
+    "Geely|Emgrand": {
+      "count": 1,
+      "min_year": 2014,
+      "max_year": 2014,
+      "max_odo": 10000.0,
+      "median_engine": 2.0,
+      "median_price_million": 171.0
+    },
+    "Haima|2": {
+      "count": 2,
+      "min_year": 2012,
+      "max_year": 2012,
+      "max_odo": 110000.0,
+      "median_engine": 1.5,
+      "median_price_million": 116.0
+    },
+    "Hino|500": {
+      "count": 1,
+      "min_year": 2015,
+      "max_year": 2015,
+      "max_odo": 165000.0,
+      "median_engine": 2.0,
+      "median_price_million": 306.0
+    },
+    "Hoa|Mai": {
+      "count": 1,
+      "min_year": 2008,
+      "max_year": 2008,
+      "max_odo": 270000.0,
+      "median_engine": 2.0,
+      "median_price_million": 51.0
+    },
+    "Honda|Accord": {
+      "count": 9,
+      "min_year": 2008,
+      "max_year": 2022,
+      "max_odo": 270000.0,
+      "median_engine": 1.5,
+      "median_price_million": 642.0
+    },
+    "Honda|Br": {
+      "count": 1,
+      "min_year": 2023,
+      "max_year": 2023,
+      "max_odo": 4666.0,
+      "median_engine": 1.5,
+      "median_price_million": 502.0
+    },
+    "Honda|Brio": {
+      "count": 16,
+      "min_year": 2019,
+      "max_year": 2021,
+      "max_odo": 75000.0,
+      "median_engine": 1.2,
+      "median_price_million": 289.0
+    },
+    "Honda|CR-V": {
+      "count": 101,
+      "min_year": 2007,
+      "max_year": 2023,
+      "max_odo": 285000.0,
+      "median_engine": 1.5,
+      "median_price_million": 525.0
+    },
+    "Honda|City": {
+      "count": 75,
+      "min_year": 2014,
+      "max_year": 2023,
+      "max_odo": 680000.0,
+      "median_engine": 1.5,
+      "median_price_million": 330.0
+    },
+    "Honda|Civic": {
+      "count": 45,
+      "min_year": 2006,
+      "max_year": 2023,
+      "max_odo": 300000.0,
+      "median_engine": 1.8,
+      "median_price_million": 235.0
+    },
+    "Honda|HR-V": {
+      "count": 7,
+      "min_year": 2019,
+      "max_year": 2023,
+      "max_odo": 72000.0,
+      "median_engine": 1.8,
+      "median_price_million": 483.0
+    },
+    "Honda|Jazz": {
+      "count": 5,
+      "min_year": 2018,
+      "max_year": 2019,
+      "max_odo": 120000.0,
+      "median_engine": 1.5,
+      "median_price_million": 270.0
+    },
+    "Honda|Odyssey": {
+      "count": 2,
+      "min_year": 2016,
+      "max_year": 2016,
+      "max_odo": 150000.0,
+      "median_engine": 2.4,
+      "median_price_million": 728.5
+    },
+    "Hyundai|Accent": {
+      "count": 131,
+      "min_year": 2011,
+      "max_year": 2024,
+      "max_odo": 6500000.0,
+      "median_engine": 1.4,
+      "median_price_million": 320.0
+    },
+    "Hyundai|Avante": {
+      "count": 11,
+      "min_year": 2011,
+      "max_year": 2016,
+      "max_odo": 195000.0,
+      "median_engine": 1.6,
+      "median_price_million": 216.0
+    },
+    "Hyundai|County": {
+      "count": 2,
+      "min_year": 2009,
+      "max_year": 2016,
+      "max_odo": 200000.0,
+      "median_engine": 3.9,
+      "median_price_million": 450.5
+    },
+    "Hyundai|Creta": {
+      "count": 20,
+      "min_year": 2016,
+      "max_year": 2022,
+      "max_odo": 68000.0,
+      "median_engine": 1.5,
+      "median_price_million": 459.0
+    },
+    "Hyundai|Elantra": {
+      "count": 51,
+      "min_year": 2013,
+      "max_year": 2023,
+      "max_odo": 680000.0,
+      "median_engine": 1.6,
+      "median_price_million": 383.0
+    },
+    "Hyundai|Emighty": {
+      "count": 1,
+      "min_year": 2009,
+      "max_year": 2009,
+      "max_odo": 255000.0,
+      "median_engine": 2.0,
+      "median_price_million": 157.0
+    },
+    "Hyundai|Eon": {
+      "count": 2,
+      "min_year": 2011,
+      "max_year": 2012,
+      "max_odo": 160000.0,
+      "median_engine": 0.8,
+      "median_price_million": 111.5
+    },
+    "Hyundai|Equus": {
+      "count": 2,
+      "min_year": 2010,
+      "max_year": 2010,
+      "max_odo": 60000.0,
+      "median_engine": 5.0,
+      "median_price_million": 1084.0
+    },
+    "Hyundai|Genesis": {
+      "count": 2,
+      "min_year": 2009,
+      "max_year": 2012,
+      "max_odo": 255000.0,
+      "median_engine": 2.0,
+      "median_price_million": 416.5
+    },
+    "Hyundai|Getz": {
+      "count": 21,
+      "min_year": 2007,
+      "max_year": 2010,
+      "max_odo": 285000.0,
+      "median_engine": 1.1,
+      "median_price_million": 102.0
+    },
+    "Hyundai|Grand": {
+      "count": 12,
+      "min_year": 2008,
+      "max_year": 2017,
+      "max_odo": 165000.0,
+      "median_engine": 2.45,
+      "median_price_million": 354.5
+    },
+    "Hyundai|Grand i10": {
+      "count": 110,
+      "min_year": 2011,
+      "max_year": 2023,
+      "max_odo": 195000.0,
+      "median_engine": 1.25,
+      "median_price_million": 205.5
+    },
+    "Hyundai|I20": {
+      "count": 4,
+      "min_year": 2011,
+      "max_year": 2017,
+      "max_odo": 210000.0,
+      "median_engine": 1.4,
+      "median_price_million": 199.5
+    },
+    "Hyundai|I30": {
+      "count": 7,
+      "min_year": 2008,
+      "max_year": 2012,
+      "max_odo": 240000.0,
+      "median_engine": 1.6,
+      "median_price_million": 226.0
+    },
+    "Hyundai|Kona": {
+      "count": 30,
+      "min_year": 2018,
+      "max_year": 2022,
+      "max_odo": 105000.0,
+      "median_engine": 2.0,
+      "median_price_million": 390.0
+    },
+    "Hyundai|Mighty": {
+      "count": 1,
+      "min_year": 2021,
+      "max_year": 2021,
+      "max_odo": 75000.0,
+      "median_engine": 2.0,
+      "median_price_million": 370.0
+    },
+    "Hyundai|Palisade": {
+      "count": 3,
+      "min_year": 2021,
+      "max_year": 2023,
+      "max_odo": 75000.0,
+      "median_engine": 2.2,
+      "median_price_million": 1089.0
+    },
+    "Hyundai|Porter": {
+      "count": 1,
+      "min_year": 2013,
+      "max_year": 2013,
+      "max_odo": 75000.0,
+      "median_engine": 2.0,
+      "median_price_million": 187.0
+    },
+    "Hyundai|SantaFe": {
+      "count": 168,
+      "min_year": 2003,
+      "max_year": 2023,
+      "max_odo": 400000.0,
+      "median_engine": 2.2,
+      "median_price_million": 696.5
+    },
+    "Hyundai|Solati": {
+      "count": 2,
+      "min_year": 2018,
+      "max_year": 2019,
+      "max_odo": 105000.0,
+      "median_engine": 2.5,
+      "median_price_million": 689.0
+    },
+    "Hyundai|Sonata": {
+      "count": 3,
+      "min_year": 2010,
+      "max_year": 2016,
+      "max_odo": 79000.0,
+      "median_engine": 2.0,
+      "median_price_million": 366.0
+    },
+    "Hyundai|Starex": {
+      "count": 6,
+      "min_year": 2004,
+      "max_year": 2012,
+      "max_odo": 330000.0,
+      "median_engine": 2.5,
+      "median_price_million": 82.0
+    },
+    "Hyundai|Stargazer": {
+      "count": 4,
+      "min_year": 2022,
+      "max_year": 2022,
+      "max_odo": 49000.0,
+      "median_engine": 1.5,
+      "median_price_million": 375.0
+    },
+    "Hyundai|Trajet": {
+      "count": 1,
+      "min_year": 2005,
+      "max_year": 2005,
+      "max_odo": 170000.0,
+      "median_engine": 2.0,
+      "median_price_million": 219.0
+    },
+    "Hyundai|Tucson": {
+      "count": 92,
+      "min_year": 2009,
+      "max_year": 2023,
+      "max_odo": 820000.0,
+      "median_engine": 2.0,
+      "median_price_million": 553.0
+    },
+    "Hyundai|Universe": {
+      "count": 2,
+      "min_year": 2008,
+      "max_year": 2013,
+      "max_odo": 270000.0,
+      "median_engine": 2.0,
+      "median_price_million": 646.5
+    },
+    "Hyundai|Veloster": {
+      "count": 2,
+      "min_year": 2011,
+      "max_year": 2011,
+      "max_odo": 90000.0,
+      "median_engine": 1.6,
+      "median_price_million": 254.5
+    },
+    "Hyundai|Venue": {
+      "count": 2,
+      "min_year": 2023,
+      "max_year": 2024,
+      "max_odo": 10000.0,
+      "median_engine": 1.0,
+      "median_price_million": 393.5
+    },
+    "Hyundai|Veracruz": {
+      "count": 1,
+      "min_year": 2007,
+      "max_year": 2007,
+      "max_odo": 110000.0,
+      "median_engine": 3.0,
+      "median_price_million": 341.0
+    },
+    "Hyundai|Verna": {
+      "count": 2,
+      "min_year": 2008,
+      "max_year": 2010,
+      "max_odo": 127000.0,
+      "median_engine": 1.4,
+      "median_price_million": 119.5
+    },
+    "Infiniti|G37": {
+      "count": 1,
+      "min_year": 2011,
+      "max_year": 2011,
+      "max_odo": 65600.0,
+      "median_engine": 3.7,
+      "median_price_million": 368.0
+    },
+    "Infiniti|Qx": {
+      "count": 5,
+      "min_year": 2014,
+      "max_year": 2016,
+      "max_odo": 150000.0,
+      "median_engine": 3.5,
+      "median_price_million": 744.0
+    },
+    "Isuzu|Dmax": {
+      "count": 5,
+      "min_year": 2007,
+      "max_year": 2021,
+      "max_odo": 222000.0,
+      "median_engine": 2.5,
+      "median_price_million": 306.0
+    },
+    "Isuzu|Hi": {
+      "count": 5,
+      "min_year": 2004,
+      "max_year": 2009,
+      "max_odo": 393520.0,
+      "median_engine": 2.5,
+      "median_price_million": 141.0
+    },
+    "Isuzu|Mu-X": {
+      "count": 3,
+      "min_year": 2016,
+      "max_year": 2017,
+      "max_odo": 135000.0,
+      "median_engine": 2.5,
+      "median_price_million": 374.0
+    },
+    "Isuzu|Samco": {
+      "count": 2,
+      "min_year": 2016,
+      "max_year": 2016,
+      "max_odo": 150000.0,
+      "median_engine": 2.0,
+      "median_price_million": 803.0
+    },
+    "Jaguar|F": {
+      "count": 1,
+      "min_year": 2014,
+      "max_year": 2014,
+      "max_odo": 64000.0,
+      "median_engine": 3.0,
+      "median_price_million": 2037.0
+    },
+    "Jaguar|Xf": {
+      "count": 1,
+      "min_year": 2014,
+      "max_year": 2014,
+      "max_odo": 28000.0,
+      "median_engine": 3.0,
+      "median_price_million": 758.0
+    },
+    "Jaguar|Xj": {
+      "count": 5,
+      "min_year": 2013,
+      "max_year": 2015,
+      "max_odo": 70000.0,
+      "median_engine": 3.0,
+      "median_price_million": 1316.0
+    },
+    "Jeep|Wrangler": {
+      "count": 8,
+      "min_year": 2020,
+      "max_year": 2023,
+      "max_odo": 75000.0,
+      "median_engine": 2.0,
+      "median_price_million": 2241.5
+    },
+    "Kia|Cadenza": {
+      "count": 1,
+      "min_year": 2015,
+      "max_year": 2015,
+      "max_odo": 140000.0,
+      "median_engine": 3.3,
+      "median_price_million": 383.0
+    },
+    "Kia|Carens": {
+      "count": 19,
+      "min_year": 2008,
+      "max_year": 2024,
+      "max_odo": 255000.0,
+      "median_engine": 2.0,
+      "median_price_million": 196.0
+    },
+    "Kia|Carnival": {
+      "count": 49,
+      "min_year": 2006,
+      "max_year": 2023,
+      "max_odo": 285000.0,
+      "median_engine": 2.2,
+      "median_price_million": 939.0
+    },
+    "Kia|Cerato": {
+      "count": 104,
+      "min_year": 2009,
+      "max_year": 2021,
+      "max_odo": 500000.0,
+      "median_engine": 1.6,
+      "median_price_million": 363.0
+    },
+    "Kia|Forte": {
+      "count": 17,
+      "min_year": 2009,
+      "max_year": 2012,
+      "max_odo": 240000.0,
+      "median_engine": 1.6,
+      "median_price_million": 202.0
+    },
+    "Kia|Frontier": {
+      "count": 7,
+      "min_year": 2014,
+      "max_year": 2019,
+      "max_odo": 180000.0,
+      "median_engine": 2.0,
+      "median_price_million": 180.0
+    },
+    "Kia|K3": {
+      "count": 51,
+      "min_year": 2013,
+      "max_year": 2024,
+      "max_odo": 180000.0,
+      "median_engine": 1.6,
+      "median_price_million": 416.0
+    },
+    "Kia|K3000S": {
+      "count": 2,
+      "min_year": 2012,
+      "max_year": 2012,
+      "max_odo": 68000.0,
+      "median_engine": 2.0,
+      "median_price_million": 112.5
+    },
+    "Kia|K5": {
+      "count": 14,
+      "min_year": 2022,
+      "max_year": 2023,
+      "max_odo": 60000.0,
+      "median_engine": 2.0,
+      "median_price_million": 566.0
+    },
+    "Kia|Morning": {
+      "count": 193,
+      "min_year": 2007,
+      "max_year": 2023,
+      "max_odo": 110000000.0,
+      "median_engine": 1.25,
+      "median_price_million": 153.0
+    },
+    "Kia|Optima": {
+      "count": 9,
+      "min_year": 2013,
+      "max_year": 2021,
+      "max_odo": 120000.0,
+      "median_engine": 2.0,
+      "median_price_million": 445.0
+    },
+    "Kia|Picanto": {
+      "count": 2,
+      "min_year": 2013,
+      "max_year": 2013,
+      "max_odo": 102000.0,
+      "median_engine": 1.25,
+      "median_price_million": 182.0
+    },
+    "Kia|Ray": {
+      "count": 1,
+      "min_year": 2012,
+      "max_year": 2012,
+      "max_odo": 59000.0,
+      "median_engine": 1.0,
+      "median_price_million": 376.0
+    },
+    "Kia|Rio": {
+      "count": 16,
+      "min_year": 2012,
+      "max_year": 2016,
+      "max_odo": 195000.0,
+      "median_engine": 1.4,
+      "median_price_million": 238.0
+    },
+    "Kia|Rondo": {
+      "count": 11,
+      "min_year": 2015,
+      "max_year": 2022,
+      "max_odo": 165000.0,
+      "median_engine": 2.0,
+      "median_price_million": 317.0
+    },
+    "Kia|Sedona": {
+      "count": 45,
+      "min_year": 2015,
+      "max_year": 2021,
+      "max_odo": 130000.0,
+      "median_engine": 2.2,
+      "median_price_million": 615.0
+    },
+    "Kia|Seltos": {
+      "count": 43,
+      "min_year": 2020,
+      "max_year": 2024,
+      "max_odo": 550000.0,
+      "median_engine": 1.4,
+      "median_price_million": 443.0
+    },
+    "Kia|Soluto": {
+      "count": 21,
+      "min_year": 2019,
+      "max_year": 2023,
+      "max_odo": 700000.0,
+      "median_engine": 1.4,
+      "median_price_million": 252.0
+    },
+    "Kia|Sonet": {
+      "count": 21,
+      "min_year": 2021,
+      "max_year": 2024,
+      "max_odo": 60000.0,
+      "median_engine": 1.5,
+      "median_price_million": 399.0
+    },
+    "Kia|Sorento": {
+      "count": 53,
+      "min_year": 2009,
+      "max_year": 2022,
+      "max_odo": 14000000.0,
+      "median_engine": 2.2,
+      "median_price_million": 514.0
+    },
+    "Kia|Soul": {
+      "count": 1,
+      "min_year": 2014,
+      "max_year": 2014,
+      "max_odo": 112000.0,
+      "median_engine": 2.0,
+      "median_price_million": 360.0
+    },
+    "Kia|Spectra": {
+      "count": 2,
+      "min_year": 2004,
+      "max_year": 2005,
+      "max_odo": 162000.0,
+      "median_engine": 1.6,
+      "median_price_million": 53.5
+    },
+    "Kia|Sportage": {
+      "count": 12,
+      "min_year": 2010,
+      "max_year": 2023,
+      "max_odo": 240000.0,
+      "median_engine": 2.0,
+      "median_price_million": 601.0
+    },
+    "Land Rover|Defender": {
+      "count": 4,
+      "min_year": 2020,
+      "max_year": 2022,
+      "max_odo": 50000.0,
+      "median_engine": 2.5,
+      "median_price_million": 3283.0
+    },
+    "Land Rover|Discovery": {
+      "count": 2,
+      "min_year": 2013,
+      "max_year": 2018,
+      "max_odo": 68000.0,
+      "median_engine": 4.0,
+      "median_price_million": 1511.0
+    },
+    "Land Rover|Range Rover": {
+      "count": 70,
+      "min_year": 2010,
+      "max_year": 2023,
+      "max_odo": 225000.0,
+      "median_engine": 3.0,
+      "median_price_million": 2655.5
+    },
+    "Land Rover|Range Rover Evoque": {
+      "count": 19,
+      "min_year": 2011,
+      "max_year": 2023,
+      "max_odo": 195000.0,
+      "median_engine": 2.0,
+      "median_price_million": 626.0
+    },
+    "Land Rover|Range Rover Sport": {
+      "count": 12,
+      "min_year": 2009,
+      "max_year": 2021,
+      "max_odo": 180000.0,
+      "median_engine": 3.0,
+      "median_price_million": 1050.0
+    },
+    "Land Rover|Range Rover Velar": {
+      "count": 3,
+      "min_year": 2017,
+      "max_year": 2022,
+      "max_odo": 39000.0,
+      "median_engine": 2.0,
+      "median_price_million": 2125.0
+    },
+    "Lexus|ES": {
+      "count": 39,
+      "min_year": 2007,
+      "max_year": 2023,
+      "max_odo": 110000.0,
+      "median_engine": 2.5,
+      "median_price_million": 1465.0
+    },
+    "Lexus|GX": {
+      "count": 22,
+      "min_year": 2006,
+      "max_year": 2021,
+      "max_odo": 270000.0,
+      "median_engine": 4.6,
+      "median_price_million": 1007.0
+    },
+    "Lexus|Gs": {
+      "count": 4,
+      "min_year": 2006,
+      "max_year": 2012,
+      "max_odo": 130000.0,
+      "median_engine": 3.5,
+      "median_price_million": 370.0
+    },
+    "Lexus|IS": {
+      "count": 5,
+      "min_year": 2006,
+      "max_year": 2021,
+      "max_odo": 300000.0,
+      "median_engine": 2.5,
+      "median_price_million": 674.0
+    },
+    "Lexus|LM": {
+      "count": 9,
+      "min_year": 2020,
+      "max_year": 2023,
+      "max_odo": 75000.0,
+      "median_engine": 3.5,
+      "median_price_million": 4626.0
+    },
+    "Lexus|LS": {
+      "count": 19,
+      "min_year": 1998,
+      "max_year": 2018,
+      "max_odo": 500000.0,
+      "median_engine": 4.6,
+      "median_price_million": 774.0
+    },
+    "Lexus|LX": {
+      "count": 42,
+      "min_year": 2006,
+      "max_year": 2023,
+      "max_odo": 270000.0,
+      "median_engine": 5.7,
+      "median_price_million": 3799.0
+    },
+    "Lexus|NX": {
+      "count": 4,
+      "min_year": 2016,
+      "max_year": 2019,
+      "max_odo": 68000.0,
+      "median_engine": 2.0,
+      "median_price_million": 1310.0
+    },
+    "Lexus|RX": {
+      "count": 109,
+      "min_year": 2005,
+      "max_year": 2024,
+      "max_odo": 315000.0,
+      "median_engine": 3.5,
+      "median_price_million": 1915.0
+    },
+    "Lincoln|Mkc": {
+      "count": 1,
+      "min_year": 2015,
+      "max_year": 2015,
+      "max_odo": 50000.0,
+      "median_engine": 2.3,
+      "median_price_million": 1136.0
+    },
+    "Lincoln|Navigator": {
+      "count": 1,
+      "min_year": 2020,
+      "max_year": 2020,
+      "max_odo": 20000.0,
+      "median_engine": 3.5,
+      "median_price_million": 4431.0
+    },
+    "Luxgen|U7": {
+      "count": 1,
+      "min_year": 2015,
+      "max_year": 2015,
+      "max_odo": 165000.0,
+      "median_engine": 2.2,
+      "median_price_million": 302.0
+    },
+    "Maserati|Ghibli": {
+      "count": 1,
+      "min_year": 2018,
+      "max_year": 2018,
+      "max_odo": 23000.0,
+      "median_engine": 3.0,
+      "median_price_million": 2178.0
+    },
+    "Maserati|Levante": {
+      "count": 6,
+      "min_year": 2016,
+      "max_year": 2019,
+      "max_odo": 120000.0,
+      "median_engine": 3.0,
+      "median_price_million": 1981.5
+    },
+    "Maserati|Quattroporte": {
+      "count": 2,
+      "min_year": 2016,
+      "max_year": 2016,
+      "max_odo": 43050.0,
+      "median_engine": 3.0,
+      "median_price_million": 2291.0
+    },
+    "Maybach|57": {
+      "count": 1,
+      "min_year": 2009,
+      "max_year": 2009,
+      "max_odo": 50000.0,
+      "median_engine": 6.0,
+      "median_price_million": 6972.0
+    },
+    "Mazda|323": {
+      "count": 1,
+      "min_year": 2003,
+      "max_year": 2003,
+      "max_odo": 345000.0,
+      "median_engine": 1.6,
+      "median_price_million": 71.0
+    },
+    "Mazda|626": {
+      "count": 2,
+      "min_year": 2000,
+      "max_year": 2003,
+      "max_odo": 230000.0,
+      "median_engine": 2.0,
+      "median_price_million": 69.0
+    },
+    "Mazda|BT-50": {
+      "count": 30,
+      "min_year": 2012,
+      "max_year": 2021,
+      "max_odo": 850000.0,
+      "median_engine": 2.2,
+      "median_price_million": 322.5
+    },
+    "Mazda|CX-3": {
+      "count": 3,
+      "min_year": 2022,
+      "max_year": 2022,
+      "max_odo": 35000.0,
+      "median_engine": 1.5,
+      "median_price_million": 426.0
+    },
+    "Mazda|CX-30": {
+      "count": 8,
+      "min_year": 2021,
+      "max_year": 2023,
+      "max_odo": 39000.0,
+      "median_engine": 2.0,
+      "median_price_million": 514.5
+    },
+    "Mazda|CX-5": {
+      "count": 136,
+      "min_year": 2013,
+      "max_year": 2023,
+      "max_odo": 180000.0,
+      "median_engine": 2.0,
+      "median_price_million": 521.5
+    },
+    "Mazda|CX-8": {
+      "count": 18,
+      "min_year": 2019,
+      "max_year": 2023,
+      "max_odo": 105000.0,
+      "median_engine": 2.5,
+      "median_price_million": 644.5
+    },
+    "Mazda|Mazda 2": {
+      "count": 26,
+      "min_year": 2013,
+      "max_year": 2023,
+      "max_odo": 165000.0,
+      "median_engine": 1.5,
+      "median_price_million": 293.5
+    },
+    "Mazda|Mazda 3": {
+      "count": 176,
+      "min_year": 2004,
+      "max_year": 2024,
+      "max_odo": 330000.0,
+      "median_engine": 1.5,
+      "median_price_million": 397.5
+    },
+    "Mazda|Mazda 6": {
+      "count": 36,
+      "min_year": 2014,
+      "max_year": 2022,
+      "max_odo": 180000.0,
+      "median_engine": 2.0,
+      "median_price_million": 420.0
+    },
+    "Mclaren|720S": {
+      "count": 1,
+      "min_year": 2017,
+      "max_year": 2017,
+      "max_odo": 11000.0,
+      "median_engine": 4.0,
+      "median_price_million": 7517.0
+    },
+    "Mercedes-Benz|A": {
+      "count": 3,
+      "min_year": 2013,
+      "max_year": 2015,
+      "max_odo": 195000.0,
+      "median_engine": 2.0,
+      "median_price_million": 924.0
+    },
+    "Mercedes-Benz|Amg": {
+      "count": 2,
+      "min_year": 2017,
+      "max_year": 2021,
+      "max_odo": 16000.0,
+      "median_engine": 4.0,
+      "median_price_million": 7001.0
+    },
+    "Mercedes-Benz|C-Class": {
+      "count": 183,
+      "min_year": 2001,
+      "max_year": 2023,
+      "max_odo": 345000.0,
+      "median_engine": 2.0,
+      "median_price_million": 773.0
+    },
+    "Mercedes-Benz|CLA": {
+      "count": 8,
+      "min_year": 2014,
+      "max_year": 2017,
+      "max_odo": 69187.0,
+      "median_engine": 2.0,
+      "median_price_million": 546.0
+    },
+    "Mercedes-Benz|Cls": {
+      "count": 1,
+      "min_year": 2010,
+      "max_year": 2010,
+      "max_odo": 240000.0,
+      "median_engine": 3.0,
+      "median_price_million": 407.0
+    },
+    "Mercedes-Benz|E-Class": {
+      "count": 144,
+      "min_year": 2003,
+      "max_year": 2024,
+      "max_odo": 860000.0,
+      "median_engine": 2.0,
+      "median_price_million": 1141.5
+    },
+    "Mercedes-Benz|Eqs": {
+      "count": 1,
+      "min_year": 2022,
+      "max_year": 2022,
+      "max_odo": 1500.0,
+      "median_engine": 0.2,
+      "median_price_million": 3059.0
+    },
+    "Mercedes-Benz|G-Class": {
+      "count": 22,
+      "min_year": 2014,
+      "max_year": 2022,
+      "max_odo": 180000.0,
+      "median_engine": 4.0,
+      "median_price_million": 7047.5
+    },
+    "Mercedes-Benz|GLA": {
+      "count": 3,
+      "min_year": 2014,
+      "max_year": 2016,
+      "max_odo": 100000.0,
+      "median_engine": 1.6,
+      "median_price_million": 470.0
+    },
+    "Mercedes-Benz|GLB": {
+      "count": 5,
+      "min_year": 2020,
+      "max_year": 2022,
+      "max_odo": 47000.0,
+      "median_engine": 2.0,
+      "median_price_million": 1388.0
+    },
+    "Mercedes-Benz|GLC": {
+      "count": 234,
+      "min_year": 2016,
+      "max_year": 2023,
+      "max_odo": 170000.0,
+      "median_engine": 2.0,
+      "median_price_million": 1162.0
+    },
+    "Mercedes-Benz|GLE": {
+      "count": 18,
+      "min_year": 2016,
+      "max_year": 2022,
+      "max_odo": 150000.0,
+      "median_engine": 3.0,
+      "median_price_million": 2291.0
+    },
+    "Mercedes-Benz|GLS": {
+      "count": 33,
+      "min_year": 2017,
+      "max_year": 2022,
+      "max_odo": 120000.0,
+      "median_engine": 3.0,
+      "median_price_million": 3177.0
+    },
+    "Mercedes-Benz|Gl": {
+      "count": 10,
+      "min_year": 2006,
+      "max_year": 2014,
+      "max_odo": 300000.0,
+      "median_engine": 4.7,
+      "median_price_million": 527.0
+    },
+    "Mercedes-Benz|Glk": {
+      "count": 14,
+      "min_year": 2009,
+      "max_year": 2015,
+      "max_odo": 255000.0,
+      "median_engine": 2.05,
+      "median_price_million": 477.0
+    },
+    "Mercedes-Benz|Maybach": {
+      "count": 29,
+      "min_year": 2015,
+      "max_year": 2023,
+      "max_odo": 150000.0,
+      "median_engine": 3.0,
+      "median_price_million": 3290.0
+    },
+    "Mercedes-Benz|Ml": {
+      "count": 3,
+      "min_year": 2005,
+      "max_year": 2008,
+      "max_odo": 156896.0,
+      "median_engine": 3.5,
+      "median_price_million": 302.0
+    },
+    "Mercedes-Benz|R": {
+      "count": 1,
+      "min_year": 2005,
+      "max_year": 2005,
+      "max_odo": 19000.0,
+      "median_engine": 3.5,
+      "median_price_million": 193.0
+    },
+    "Mercedes-Benz|S-Class": {
+      "count": 71,
+      "min_year": 2004,
+      "max_year": 2024,
+      "max_odo": 300000.0,
+      "median_engine": 3.0,
+      "median_price_million": 1652.0
+    },
+    "Mercedes-Benz|Sprinter": {
+      "count": 3,
+      "min_year": 2007,
+      "max_year": 2012,
+      "max_odo": 400000.0,
+      "median_engine": 2.2,
+      "median_price_million": 180.0
+    },
+    "Mercedes-Benz|V": {
+      "count": 11,
+      "min_year": 2015,
+      "max_year": 2022,
+      "max_odo": 165000.0,
+      "median_engine": 2.0,
+      "median_price_million": 1194.0
+    },
+    "Mercedes-Benz|Vito": {
+      "count": 3,
+      "min_year": 2013,
+      "max_year": 2016,
+      "max_odo": 160000.0,
+      "median_engine": 2.0,
+      "median_price_million": 696.0
+    },
+    "Mg|5": {
+      "count": 10,
+      "min_year": 2022,
+      "max_year": 2023,
+      "max_odo": 60000.0,
+      "median_engine": 1.5,
+      "median_price_million": 325.0
+    },
+    "Mg|Hs": {
+      "count": 4,
+      "min_year": 2020,
+      "max_year": 2021,
+      "max_odo": 104154.0,
+      "median_engine": 1.75,
+      "median_price_million": 425.0
+    },
+    "Mg|Zs": {
+      "count": 12,
+      "min_year": 2020,
+      "max_year": 2024,
+      "max_odo": 60000.0,
+      "median_engine": 1.5,
+      "median_price_million": 339.5
+    },
+    "Mini|Cooper": {
+      "count": 20,
+      "min_year": 2005,
+      "max_year": 2022,
+      "max_odo": 315000.0,
+      "median_engine": 2.0,
+      "median_price_million": 1221.5
+    },
+    "Mitsubishi|Attrage": {
+      "count": 21,
+      "min_year": 2017,
+      "max_year": 2023,
+      "max_odo": 120000.0,
+      "median_engine": 1.2,
+      "median_price_million": 252.0
+    },
+    "Mitsubishi|Colt": {
+      "count": 1,
+      "min_year": 2007,
+      "max_year": 2007,
+      "max_odo": 85000.0,
+      "median_engine": 1.6,
+      "median_price_million": 184.0
+    },
+    "Mitsubishi|Grandis": {
+      "count": 4,
+      "min_year": 2005,
+      "max_year": 2006,
+      "max_odo": 315000.0,
+      "median_engine": 2.4,
+      "median_price_million": 175.5
+    },
+    "Mitsubishi|Jolie": {
+      "count": 12,
+      "min_year": 2002,
+      "max_year": 2006,
+      "max_odo": 26000000.0,
+      "median_engine": 2.0,
+      "median_price_million": 75.5
+    },
+    "Mitsubishi|Lancer": {
+      "count": 3,
+      "min_year": 2001,
+      "max_year": 2005,
+      "max_odo": 375000.0,
+      "median_engine": 1.6,
+      "median_price_million": 102.0
+    },
+    "Mitsubishi|Mirage": {
+      "count": 3,
+      "min_year": 2017,
+      "max_year": 2018,
+      "max_odo": 100000.0,
+      "median_engine": 1.2,
+      "median_price_million": 176.0
+    },
+    "Mitsubishi|Outlander": {
+      "count": 28,
+      "min_year": 2016,
+      "max_year": 2022,
+      "max_odo": 120000.0,
+      "median_engine": 2.0,
+      "median_price_million": 505.5
+    },
+    "Mitsubishi|Pajero": {
+      "count": 7,
+      "min_year": 1999,
+      "max_year": 2009,
+      "max_odo": 448000.0,
+      "median_engine": 3.0,
+      "median_price_million": 114.0
+    },
+    "Mitsubishi|Pajero Sport": {
+      "count": 17,
+      "min_year": 2014,
+      "max_year": 2021,
+      "max_odo": 135000.0,
+      "median_engine": 2.4,
+      "median_price_million": 556.0
+    },
+    "Mitsubishi|Triton": {
+      "count": 33,
+      "min_year": 2009,
+      "max_year": 2022,
+      "max_odo": 255000.0,
+      "median_engine": 2.4,
+      "median_price_million": 377.0
+    },
+    "Mitsubishi|Xpander": {
+      "count": 87,
+      "min_year": 2018,
+      "max_year": 2023,
+      "max_odo": 111000.0,
+      "median_engine": 1.5,
+      "median_price_million": 387.0
+    },
+    "Mitsubishi|Xpander Cross": {
+      "count": 22,
+      "min_year": 2020,
+      "max_year": 2023,
+      "max_odo": 90000.0,
+      "median_engine": 1.5,
+      "median_price_million": 421.5
+    },
+    "Mitsubishi|Zinger": {
+      "count": 1,
+      "min_year": 2008,
+      "max_year": 2008,
+      "max_odo": 180.0,
+      "median_engine": 2.4,
+      "median_price_million": 141.0
+    },
+    "Nissan|Almera": {
+      "count": 9,
+      "min_year": 2021,
+      "max_year": 2022,
+      "max_odo": 75000.0,
+      "median_engine": 1.0,
+      "median_price_million": 320.0
+    },
+    "Nissan|Grand": {
+      "count": 3,
+      "min_year": 2010,
+      "max_year": 2011,
+      "max_odo": 225000.0,
+      "median_engine": 1.8,
+      "median_price_million": 149.0
+    },
+    "Nissan|Navara": {
+      "count": 18,
+      "min_year": 2011,
+      "max_year": 2023,
+      "max_odo": 180000.0,
+      "median_engine": 2.5,
+      "median_price_million": 375.5
+    },
+    "Nissan|Sunny": {
+      "count": 11,
+      "min_year": 2013,
+      "max_year": 2020,
+      "max_odo": 180000.0,
+      "median_engine": 1.5,
+      "median_price_million": 214.0
+    },
+    "Nissan|Teana": {
+      "count": 4,
+      "min_year": 2008,
+      "max_year": 2010,
+      "max_odo": 240000.0,
+      "median_engine": 2.0,
+      "median_price_million": 206.0
+    },
+    "Nissan|Terra": {
+      "count": 5,
+      "min_year": 2018,
+      "max_year": 2019,
+      "max_odo": 105000.0,
+      "median_engine": 2.5,
+      "median_price_million": 469.0
+    },
+    "Nissan|Tiida": {
+      "count": 1,
+      "min_year": 2008,
+      "max_year": 2008,
+      "max_odo": 270000.0,
+      "median_engine": 1.6,
+      "median_price_million": 166.0
+    },
+    "Nissan|X": {
+      "count": 10,
+      "min_year": 2016,
+      "max_year": 2020,
+      "max_odo": 98000.0,
+      "median_engine": 2.5,
+      "median_price_million": 430.0
+    },
+    "Peugeot|2008": {
+      "count": 12,
+      "min_year": 2020,
+      "max_year": 2022,
+      "max_odo": 100000.0,
+      "median_engine": 1.2,
+      "median_price_million": 475.5
+    },
+    "Peugeot|208": {
+      "count": 5,
+      "min_year": 2013,
+      "max_year": 2015,
+      "max_odo": 110000.0,
+      "median_engine": 1.6,
+      "median_price_million": 270.0
+    },
+    "Peugeot|3008": {
+      "count": 25,
+      "min_year": 2017,
+      "max_year": 2022,
+      "max_odo": 120000.0,
+      "median_engine": 1.6,
+      "median_price_million": 563.0
+    },
+    "Peugeot|408": {
+      "count": 3,
+      "min_year": 2014,
+      "max_year": 2024,
+      "max_odo": 100000.0,
+      "median_engine": 2.0,
+      "median_price_million": 719.0
+    },
+    "Peugeot|5008": {
+      "count": 13,
+      "min_year": 2018,
+      "max_year": 2022,
+      "max_odo": 86000.0,
+      "median_engine": 1.6,
+      "median_price_million": 629.0
+    },
+    "Peugeot|Traveller": {
+      "count": 1,
+      "min_year": 2021,
+      "max_year": 2021,
+      "max_odo": 16000.0,
+      "median_engine": 2.0,
+      "median_price_million": 803.0
+    },
+    "Porsche|718": {
+      "count": 11,
+      "min_year": 2017,
+      "max_year": 2023,
+      "max_odo": 35000.0,
+      "median_engine": 2.0,
+      "median_price_million": 2726.0
+    },
+    "Porsche|911": {
+      "count": 4,
+      "min_year": 2021,
+      "max_year": 2023,
+      "max_odo": 5500.0,
+      "median_engine": 3.0,
+      "median_price_million": 6456.5
+    },
+    "Porsche|Cayenne": {
+      "count": 34,
+      "min_year": 2007,
+      "max_year": 2024,
+      "max_odo": 225000.0,
+      "median_engine": 3.6,
+      "median_price_million": 1473.0
+    },
+    "Porsche|Macan": {
+      "count": 41,
+      "min_year": 2014,
+      "max_year": 2023,
+      "max_odo": 165000.0,
+      "median_engine": 2.0,
+      "median_price_million": 2065.0
+    },
+    "Porsche|Panamera": {
+      "count": 25,
+      "min_year": 2009,
+      "max_year": 2022,
+      "max_odo": 225000.0,
+      "median_engine": 3.0,
+      "median_price_million": 3815.0
+    },
+    "Porsche|Taycan": {
+      "count": 2,
+      "min_year": 2020,
+      "max_year": 2022,
+      "max_odo": 5000.0,
+      "median_engine": 2.0,
+      "median_price_million": 4553.5
+    },
+    "Ram|1500": {
+      "count": 1,
+      "min_year": 2022,
+      "max_year": 2022,
+      "max_odo": 11000.0,
+      "median_engine": 5.7,
+      "median_price_million": 3060.0
+    },
+    "Renault|Latitude": {
+      "count": 1,
+      "min_year": 2015,
+      "max_year": 2015,
+      "max_odo": 70000.0,
+      "median_engine": 2.0,
+      "median_price_million": 289.0
+    },
+    "Renault|Megane": {
+      "count": 1,
+      "min_year": 2016,
+      "max_year": 2016,
+      "max_odo": 150000.0,
+      "median_engine": 1.6,
+      "median_price_million": 454.0
+    },
+    "Renault|Twingo": {
+      "count": 1,
+      "min_year": 2008,
+      "max_year": 2008,
+      "max_odo": 33000.0,
+      "median_engine": 1.1,
+      "median_price_million": 304.0
+    },
+    "Rolls-Royce|Ghost": {
+      "count": 9,
+      "min_year": 2010,
+      "max_year": 2016,
+      "max_odo": 240000.0,
+      "median_engine": 6.6,
+      "median_price_million": 5092.0
+    },
+    "Rolls-Royce|Phantom": {
+      "count": 3,
+      "min_year": 2012,
+      "max_year": 2013,
+      "max_odo": 17000.0,
+      "median_engine": 6.7,
+      "median_price_million": 12185.0
+    },
+    "Samsung|Qm5": {
+      "count": 1,
+      "min_year": 2014,
+      "max_year": 2014,
+      "max_odo": 15000.0,
+      "median_engine": 2.0,
+      "median_price_million": 227.0
+    },
+    "Ssangyong|Musso": {
+      "count": 1,
+      "min_year": 1997,
+      "max_year": 1997,
+      "max_odo": 1000.0,
+      "median_engine": 2.8,
+      "median_price_million": 114.0
+    },
+    "Ssangyong|Rexton": {
+      "count": 1,
+      "min_year": 2009,
+      "max_year": 2009,
+      "max_odo": 255000.0,
+      "median_engine": 3.2,
+      "median_price_million": 145.0
+    },
+    "Ssangyong|Stavic": {
+      "count": 1,
+      "min_year": 2009,
+      "max_year": 2009,
+      "max_odo": 140000.0,
+      "median_engine": 2.7,
+      "median_price_million": 110.0
+    },
+    "Ssangyong|Tivoli": {
+      "count": 3,
+      "min_year": 2015,
+      "max_year": 2016,
+      "max_odo": 150000.0,
+      "median_engine": 1.6,
+      "median_price_million": 251.0
+    },
+    "Subaru|Forester": {
+      "count": 3,
+      "min_year": 2019,
+      "max_year": 2023,
+      "max_odo": 165000.0,
+      "median_engine": 2.0,
+      "median_price_million": 526.0
+    },
+    "Suzuki|Carry": {
+      "count": 6,
+      "min_year": 2010,
+      "max_year": 2019,
+      "max_odo": 240000.0,
+      "median_engine": 1.6,
+      "median_price_million": 145.0
+    },
+    "Suzuki|Celerio": {
+      "count": 2,
+      "min_year": 2019,
+      "max_year": 2019,
+      "max_odo": 105000.0,
+      "median_engine": 1.0,
+      "median_price_million": 200.5
+    },
+    "Suzuki|Ciaz": {
+      "count": 6,
+      "min_year": 2019,
+      "max_year": 2021,
+      "max_odo": 75000.0,
+      "median_engine": 1.4,
+      "median_price_million": 268.5
+    },
+    "Suzuki|Ertiga": {
+      "count": 9,
+      "min_year": 2015,
+      "max_year": 2021,
+      "max_odo": 165000.0,
+      "median_engine": 1.5,
+      "median_price_million": 323.0
+    },
+    "Suzuki|Jimny": {
+      "count": 1,
+      "min_year": 2023,
+      "max_year": 2023,
+      "max_odo": 45000.0,
+      "median_engine": 1.5,
+      "median_price_million": 562.0
+    },
+    "Suzuki|Super": {
+      "count": 9,
+      "min_year": 2003,
+      "max_year": 2022,
+      "max_odo": 689777.0,
+      "median_engine": 1.0,
+      "median_price_million": 109.0
+    },
+    "Suzuki|Swift": {
+      "count": 25,
+      "min_year": 2008,
+      "max_year": 2023,
+      "max_odo": 165000.0,
+      "median_engine": 1.4,
+      "median_price_million": 259.0
+    },
+    "Suzuki|Vitara": {
+      "count": 2,
+      "min_year": 2003,
+      "max_year": 2004,
+      "max_odo": 330000.0,
+      "median_engine": 1.6,
+      "median_price_million": 113.5
+    },
+    "Suzuki|Wagon": {
+      "count": 1,
+      "min_year": 2005,
+      "max_year": 2005,
+      "max_odo": 110000.0,
+      "median_engine": 1.0,
+      "median_price_million": 116.0
+    },
+    "Suzuki|Xl7": {
+      "count": 19,
+      "min_year": 2020,
+      "max_year": 2022,
+      "max_odo": 86000.0,
+      "median_engine": 1.5,
+      "median_price_million": 365.0
+    },
+    "Thaco|Auman": {
+      "count": 1,
+      "min_year": 2017,
+      "max_year": 2017,
+      "max_odo": 306985.0,
+      "median_engine": 2.0,
+      "median_price_million": 345.0
+    },
+    "Thaco|Foton": {
+      "count": 1,
+      "min_year": 2009,
+      "max_year": 2009,
+      "max_odo": 255000.0,
+      "median_engine": 2.0,
+      "median_price_million": 62.0
+    },
+    "Thaco|Frontier": {
+      "count": 2,
+      "min_year": 2008,
+      "max_year": 2023,
+      "max_odo": 270000.0,
+      "median_engine": 2.0,
+      "median_price_million": 137.0
+    },
+    "Thaco|Town": {
+      "count": 3,
+      "min_year": 2014,
+      "max_year": 2020,
+      "max_odo": 180000.0,
+      "median_engine": 2.0,
+      "median_price_million": 94.0
+    },
+    "Thaco|Towner": {
+      "count": 2,
+      "min_year": 2017,
+      "max_year": 2022,
+      "max_odo": 48200.0,
+      "median_engine": 1.7,
+      "median_price_million": 135.5
+    },
+    "Toyota|Alphard": {
+      "count": 18,
+      "min_year": 2010,
+      "max_year": 2023,
+      "max_odo": 240000.0,
+      "median_engine": 3.5,
+      "median_price_million": 2247.5
+    },
+    "Toyota|Avalon": {
+      "count": 2,
+      "min_year": 2006,
+      "max_year": 2013,
+      "max_odo": 195000.0,
+      "median_engine": 3.0,
+      "median_price_million": 627.0
+    },
+    "Toyota|Avanza": {
+      "count": 6,
+      "min_year": 2018,
+      "max_year": 2022,
+      "max_odo": 137000.0,
+      "median_engine": 1.5,
+      "median_price_million": 321.0
+    },
+    "Toyota|Aygo": {
+      "count": 1,
+      "min_year": 2010,
+      "max_year": 2010,
+      "max_odo": 240000.0,
+      "median_engine": 1.0,
+      "median_price_million": 145.0
+    },
+    "Toyota|Camry": {
+      "count": 135,
+      "min_year": 1998,
+      "max_year": 2023,
+      "max_odo": 420000.0,
+      "median_engine": 2.4,
+      "median_price_million": 494.0
+    },
+    "Toyota|Corolla": {
+      "count": 5,
+      "min_year": 1995,
+      "max_year": 2010,
+      "max_odo": 465000.0,
+      "median_engine": 1.6,
+      "median_price_million": 78.0
+    },
+    "Toyota|Corolla Altis": {
+      "count": 75,
+      "min_year": 2002,
+      "max_year": 2023,
+      "max_odo": 1400000.0,
+      "median_engine": 1.8,
+      "median_price_million": 353.0
+    },
+    "Toyota|Corolla Cross": {
+      "count": 92,
+      "min_year": 2020,
+      "max_year": 2023,
+      "max_odo": 260000.0,
+      "median_engine": 1.8,
+      "median_price_million": 569.0
+    },
+    "Toyota|Crown": {
+      "count": 2,
+      "min_year": 1995,
+      "max_year": 1996,
+      "max_odo": 465000.0,
+      "median_engine": 3.0,
+      "median_price_million": 379.5
+    },
+    "Toyota|Fj": {
+      "count": 1,
+      "min_year": 2010,
+      "max_year": 2010,
+      "max_odo": 80000.0,
+      "median_engine": 4.0,
+      "median_price_million": 1293.0
+    },
+    "Toyota|Fortuner": {
+      "count": 207,
+      "min_year": 2009,
+      "max_year": 2023,
+      "max_odo": 1100000.0,
+      "median_engine": 2.5,
+      "median_price_million": 552.0
+    },
+    "Toyota|Hiace": {
+      "count": 7,
+      "min_year": 2004,
+      "max_year": 2018,
+      "max_odo": 240361.0,
+      "median_engine": 2.7,
+      "median_price_million": 196.0
+    },
+    "Toyota|Highlander": {
+      "count": 8,
+      "min_year": 2008,
+      "max_year": 2020,
+      "max_odo": 255000.0,
+      "median_engine": 2.7,
+      "median_price_million": 918.5
+    },
+    "Toyota|Hilux": {
+      "count": 23,
+      "min_year": 2013,
+      "max_year": 2023,
+      "max_odo": 152000.0,
+      "median_engine": 2.4,
+      "median_price_million": 479.0
+    },
+    "Toyota|Innova": {
+      "count": 197,
+      "min_year": 2006,
+      "max_year": 2023,
+      "max_odo": 1000000.0,
+      "median_engine": 2.0,
+      "median_price_million": 330.0
+    },
+    "Toyota|Land Cruiser": {
+      "count": 68,
+      "min_year": 2002,
+      "max_year": 2023,
+      "max_odo": 345000.0,
+      "median_engine": 4.55,
+      "median_price_million": 2954.5
+    },
+    "Toyota|Matrix": {
+      "count": 1,
+      "min_year": 2009,
+      "max_year": 2009,
+      "max_odo": 56000.0,
+      "median_engine": 1.8,
+      "median_price_million": 274.0
+    },
+    "Toyota|Prado": {
+      "count": 32,
+      "min_year": 2007,
+      "max_year": 2022,
+      "max_odo": 240000.0,
+      "median_engine": 2.7,
+      "median_price_million": 1456.5
+    },
+    "Toyota|Previa": {
+      "count": 3,
+      "min_year": 2006,
+      "max_year": 2008,
+      "max_odo": 270000.0,
+      "median_engine": 2.4,
+      "median_price_million": 384.0
+    },
+    "Toyota|Raize": {
+      "count": 14,
+      "min_year": 2021,
+      "max_year": 2023,
+      "max_odo": 60000.0,
+      "median_engine": 1.0,
+      "median_price_million": 369.0
+    },
+    "Toyota|Rav4": {
+      "count": 5,
+      "min_year": 2006,
+      "max_year": 2008,
+      "max_odo": 300000.0,
+      "median_engine": 2.4,
+      "median_price_million": 242.0
+    },
+    "Toyota|Rush": {
+      "count": 15,
+      "min_year": 2018,
+      "max_year": 2021,
+      "max_odo": 75000.0,
+      "median_engine": 1.5,
+      "median_price_million": 398.0
+    },
+    "Toyota|Sienna": {
+      "count": 19,
+      "min_year": 2008,
+      "max_year": 2021,
+      "max_odo": 270000.0,
+      "median_engine": 3.5,
+      "median_price_million": 1480.0
+    },
+    "Toyota|Veloz Cross": {
+      "count": 47,
+      "min_year": 2022,
+      "max_year": 2024,
+      "max_odo": 65000.0,
+      "median_engine": 1.5,
+      "median_price_million": 441.0
+    },
+    "Toyota|Venza": {
+      "count": 14,
+      "min_year": 2009,
+      "max_year": 2011,
+      "max_odo": 212800.0,
+      "median_engine": 2.7,
+      "median_price_million": 364.0
+    },
+    "Toyota|Vios": {
+      "count": 218,
+      "min_year": 2003,
+      "max_year": 2024,
+      "max_odo": 2000000.0,
+      "median_engine": 1.5,
+      "median_price_million": 284.0
+    },
+    "Toyota|Wigo": {
+      "count": 27,
+      "min_year": 2019,
+      "max_year": 2021,
+      "max_odo": 330000.0,
+      "median_engine": 1.2,
+      "median_price_million": 225.0
+    },
+    "Toyota|Wish": {
+      "count": 1,
+      "min_year": 2008,
+      "max_year": 2008,
+      "max_odo": 79000.0,
+      "median_engine": 2.0,
+      "median_price_million": 251.0
+    },
+    "Toyota|Yaris": {
+      "count": 37,
+      "min_year": 2007,
+      "max_year": 2024,
+      "max_odo": 255000.0,
+      "median_engine": 1.5,
+      "median_price_million": 291.0
+    },
+    "Toyota|Zace": {
+      "count": 12,
+      "min_year": 2000,
+      "max_year": 2005,
+      "max_odo": 40000000.0,
+      "median_engine": 1.8,
+      "median_price_million": 114.0
+    },
+    "VinFast|Fadil": {
+      "count": 50,
+      "min_year": 2019,
+      "max_year": 2022,
+      "max_odo": 105000.0,
+      "median_engine": 1.4,
+      "median_price_million": 240.5
+    },
+    "VinFast|Lux A2.0": {
+      "count": 62,
+      "min_year": 2019,
+      "max_year": 2022,
+      "max_odo": 105000.0,
+      "median_engine": 2.0,
+      "median_price_million": 441.0
+    },
+    "VinFast|Lux SA2.0": {
+      "count": 40,
+      "min_year": 2019,
+      "max_year": 2022,
+      "max_odo": 150000.0,
+      "median_engine": 2.0,
+      "median_price_million": 559.5
+    },
+    "VinFast|VF 5": {
+      "count": 1,
+      "min_year": 2023,
+      "max_year": 2023,
+      "max_odo": 1200.0,
+      "median_engine": 2.0,
+      "median_price_million": 310.0
+    },
+    "VinFast|VF 6": {
+      "count": 2,
+      "min_year": 2023,
+      "max_year": 2023,
+      "max_odo": 3000.0,
+      "median_engine": 0.6,
+      "median_price_million": 550.0
+    },
+    "VinFast|VF 8": {
+      "count": 14,
+      "min_year": 2022,
+      "max_year": 2023,
+      "max_odo": 77000.0,
+      "median_engine": 0.2,
+      "median_price_million": 597.0
+    },
+    "VinFast|VF 9": {
+      "count": 10,
+      "min_year": 2023,
+      "max_year": 2023,
+      "max_odo": 45000.0,
+      "median_engine": 0.2,
+      "median_price_million": 861.0
+    },
+    "VinFast|VF e34": {
+      "count": 7,
+      "min_year": 2022,
+      "max_year": 2023,
+      "max_odo": 80000.0,
+      "median_engine": 0.1,
+      "median_price_million": 352.0
+    },
+    "Volkswagen|New": {
+      "count": 3,
+      "min_year": 2007,
+      "max_year": 2010,
+      "max_odo": 285000.0,
+      "median_engine": 2.5,
+      "median_price_million": 353.0
+    },
+    "Volkswagen|Passat": {
+      "count": 4,
+      "min_year": 2016,
+      "max_year": 2016,
+      "max_odo": 150000.0,
+      "median_engine": 1.8,
+      "median_price_million": 466.0
+    },
+    "Volkswagen|Polo": {
+      "count": 6,
+      "min_year": 2015,
+      "max_year": 2022,
+      "max_odo": 152000.0,
+      "median_engine": 1.6,
+      "median_price_million": 278.5
+    },
+    "Volkswagen|Scirocco": {
+      "count": 3,
+      "min_year": 2010,
+      "max_year": 2016,
+      "max_odo": 80000.0,
+      "median_engine": 2.0,
+      "median_price_million": 421.0
+    },
+    "Volkswagen|T-Cross": {
+      "count": 2,
+      "min_year": 2021,
+      "max_year": 2022,
+      "max_odo": 20000.0,
+      "median_engine": 1.0,
+      "median_price_million": 589.5
+    },
+    "Volkswagen|Teramont": {
+      "count": 1,
+      "min_year": 2021,
+      "max_year": 2021,
+      "max_odo": 75000.0,
+      "median_engine": 2.0,
+      "median_price_million": 1316.0
+    },
+    "Volkswagen|Tiguan": {
+      "count": 9,
+      "min_year": 2012,
+      "max_year": 2022,
+      "max_odo": 210000.0,
+      "median_engine": 2.0,
+      "median_price_million": 736.0
+    },
+    "Volkswagen|Touareg": {
+      "count": 2,
+      "min_year": 2013,
+      "max_year": 2022,
+      "max_odo": 111888.0,
+      "median_engine": 2.8,
+      "median_price_million": 1150.0
+    },
+    "Volkswagen|Viloran": {
+      "count": 2,
+      "min_year": 2023,
+      "max_year": 2024,
+      "max_odo": 777.0,
+      "median_engine": 2.0,
+      "median_price_million": 1415.0
+    },
+    "Volkswagen|Virtus": {
+      "count": 1,
+      "min_year": 2022,
+      "max_year": 2022,
+      "max_odo": 22000.0,
+      "median_engine": 1.0,
+      "median_price_million": 497.0
+    },
+    "Volvo|S60": {
+      "count": 4,
+      "min_year": 2020,
+      "max_year": 2022,
+      "max_odo": 50000.0,
+      "median_engine": 2.0,
+      "median_price_million": 1067.0
+    },
+    "Volvo|S90": {
+      "count": 10,
+      "min_year": 2021,
+      "max_year": 2023,
+      "max_odo": 60000.0,
+      "median_engine": 2.0,
+      "median_price_million": 1254.5
+    },
+    "Volvo|V60": {
+      "count": 1,
+      "min_year": 2023,
+      "max_year": 2023,
+      "max_odo": 3000.0,
+      "median_engine": 2.0,
+      "median_price_million": 1744.0
+    },
+    "Volvo|Xc40": {
+      "count": 1,
+      "min_year": 2021,
+      "max_year": 2021,
+      "max_odo": 17500.0,
+      "median_engine": 2.0,
+      "median_price_million": 1051.0
+    },
+    "Volvo|Xc60": {
+      "count": 4,
+      "min_year": 2016,
+      "max_year": 2022,
+      "max_odo": 52000.0,
+      "median_engine": 2.0,
+      "median_price_million": 1216.5
+    },
+    "Volvo|Xc90": {
+      "count": 11,
+      "min_year": 2017,
+      "max_year": 2022,
+      "max_odo": 44000.0,
+      "median_engine": 2.0,
+      "median_price_million": 2554.0
+    },
+    "Zotye|T600": {
+      "count": 1,
+      "min_year": 2016,
+      "max_year": 2016,
+      "max_odo": 150000.0,
+      "median_engine": 2.0,
+      "median_price_million": 201.0
+    },
+    "Zotye|Z8": {
+      "count": 1,
+      "min_year": 2020,
+      "max_year": 2020,
+      "max_odo": 39000.0,
+      "median_engine": 2.0,
+      "median_price_million": 342.0
+    }
+  }
+}

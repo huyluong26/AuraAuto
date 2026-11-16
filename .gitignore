@@ -1,0 +1,75 @@
+# Environment & Secret files (Never commit secrets)
+.env
+.env.*
+*.env
+**/.env
+**/.env.*
+!.env.example
+!**/.env.example
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+.venv/
+venv/
+ENV/
+build/
+dist/
+*.egg-info/
+
+# Testing & Coverage
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Node / Frontend
+node_modules/
+.next/
+out/
+build/
+.pnp
+.pnp.*
+*.tsbuildinfo
+next-env.d.ts
+
+# Database & SQLite
+*.db
+*.sqlite3
+
+# Uploads & User generated content
+uploads/
+**/uploads/
+
+# Machine Learning logs & training cache
+catboost_info/
+**/catboost_info/
+
+# Project internal docs, images & raw datasets
+docs/
+HoSo_OtoCu_v1/
+img/
+HoSo_BA_OtoCu_v1.docx
+HoSo_KyThuat_OtoCu_v1.docx
+Data.xlsx
+*.docx
+abcdxyz.docx
+
+# Certificates & Keys
+*.pem
+*.key
+*.cert
+*.crt
+id_rsa
+id_ed25519
+
+# OS / Editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.swp
+*.swo
