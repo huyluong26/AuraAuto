@@ -5,9 +5,10 @@ from typing import List, Optional
 import unicodedata
 from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy import select, func, desc, or_
-from sqlalchemy.orm import selectinload
+from sqlalchemy.orm import selectinload, joinedload
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.cache import fast_cache
 from app.core.database import get_db
 from app.core.deps import require_admin
 from app.models.user import User
@@ -54,9 +55,16 @@ async def list_published_articles(
     offset: int = Query(0, ge=0),
     db: AsyncSession = Depends(get_db),
 ):
+    is_default = not category and not search and offset == 0
+    cache_key = f"articles:list:{limit}" if is_default else None
+    if cache_key:
+        cached = await fast_cache.get(cache_key)
+        if cached is not None:
+            return cached
+
     stmt = (
         select(Article)
-        .options(selectinload(Article.author))
+        .options(joinedload(Article.author))
         .where(Article.status == "PUBLISHED")
         .order_by(Article.published_at.desc(), Article.created_at.desc())
         .limit(limit)
@@ -72,7 +80,7 @@ async def list_published_articles(
     res = await db.execute(stmt)
     articles = res.scalars().all()
 
-    return [
+    items = [
         ArticleListItemResponse(
             id=a.id,
             title=a.title,
@@ -88,6 +96,9 @@ async def list_published_articles(
         )
         for a in articles
     ]
+    if cache_key:
+        await fast_cache.set(cache_key, items, ttl_seconds=120)
+    return items
 
 
 @router.get("/articles/{id_or_slug}", response_model=ArticleDetailResponse)
@@ -209,6 +220,7 @@ async def create_admin_article(
     db.add(article)
     await db.commit()
     await db.refresh(article)
+    await fast_cache.invalidate_prefix("articles:")
 
     # Nạp author relation
     stmt = select(Article).options(selectinload(Article.author)).where(Article.id == article.id)
@@ -265,6 +277,7 @@ async def update_admin_article(
 
     await db.commit()
     await db.refresh(article)
+    await fast_cache.invalidate_prefix("articles:")
 
     return ArticleDetailResponse(
         id=article.id,
@@ -299,6 +312,7 @@ async def approve_admin_article(
     article.status = "PUBLISHED"
     article.published_at = datetime.now(timezone.utc)
     await db.commit()
+    await fast_cache.invalidate_prefix("articles:")
 
     return SuccessResponse(message="Duyệt và xuất bản tin tức thành công!", data={"status": "PUBLISHED"})
 
@@ -318,5 +332,6 @@ async def delete_admin_article(
 
     await db.delete(article)
     await db.commit()
+    await fast_cache.invalidate_prefix("articles:")
 
     return SuccessResponse(message="Đã xóa vĩnh viễn bài viết tin tức thành công!")

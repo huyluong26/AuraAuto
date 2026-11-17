@@ -17,6 +17,7 @@ export function CreateListingForm() {
     return (
       <ListingSuccessModal
         listingId={listingState.createdListingId}
+        status={listingState.createdListingStatus}
         onReset={() => {
           window.location.reload();
         }}

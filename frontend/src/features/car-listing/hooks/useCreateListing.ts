@@ -108,6 +108,7 @@ export function useCreateListing() {
   const [submitStatusText, setSubmitStatusText] = useState('Đang khởi tạo tin...');
   const [success, setSuccess] = useState(false);
   const [createdListingId, setCreatedListingId] = useState<string | null>(null);
+  const [createdListingStatus, setCreatedListingStatus] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const clearFieldError = useCallback((field: string) => {
@@ -936,12 +937,17 @@ export function useCreateListing() {
 
         const res = await api.createListing(payload);
         const newListingId = res?.data?.id || null;
+        let finalStatus = res?.data?.status || null;
         setCreatedListingId(newListingId);
 
-        // Đảm bảo tin được gửi thẳng tới hàng chờ duyệt (PENDING_REVIEW)
+        // Đảm bảo tin được gửi thẳng tới hàng chờ duyệt nếu chưa được xuất bản
         if (newListingId && res?.data?.status === 'DRAFT') {
-          await api.submitListingForReview(newListingId).catch(() => {});
+          const submitRes = await api.submitListingForReview(newListingId).catch(() => null);
+          if (submitRes?.data?.status) {
+            finalStatus = submitRes.data.status;
+          }
         }
+        setCreatedListingStatus(finalStatus);
 
         setSuccess(true);
       } catch (err: any) {
@@ -1100,6 +1106,7 @@ export function useCreateListing() {
     submitStatusText,
     success,
     createdListingId,
+    createdListingStatus,
     handleSubmit,
   };
 }

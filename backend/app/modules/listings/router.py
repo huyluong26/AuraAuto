@@ -9,6 +9,7 @@ from sqlalchemy.orm import selectinload
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db, AsyncSessionLocal
+from app.core.cache import fast_cache
 from app.core.deps import get_current_active_user, get_current_verified_user, get_optional_user
 from app.models.user import User
 from app.models.listing import Listing, ListingRevision
@@ -39,8 +40,17 @@ async def create_draft_listing(
     listing = await service.create_draft(current_user, data)
     if submit_now:
         listing = await service.submit_for_review(listing.id, current_user)
+    await fast_cache.invalidate_prefix("listings:")
+
+    if listing.status == "PUBLISHED":
+        msg = "Đăng tin xe thành công! Tin đã được hệ thống tự động phê duyệt và xuất bản trực tiếp lên sàn AuraAuto."
+    elif submit_now:
+        msg = "Đăng tin xe thành công! Hồ sơ đã được gửi tới Ban Quản Trị để phê duyệt xuất bản."
+    else:
+        msg = "Đã lưu bản nháp tin đăng xe thành công."
+
     return SuccessResponse(
-        message="Đăng tin xe thành công! Hồ sơ đã được gửi tới Ban Quản Trị để phê duyệt xuất bản.",
+        message=msg,
         data={"id": str(listing.id), "status": listing.status},
     )
 
@@ -64,6 +74,21 @@ async def list_listings(
     page_size: int = Query(20, ge=1, le=100),
     db: AsyncSession = Depends(get_db),
 ):
+    # Cache cho các truy vấn phổ biến mặc định (homepage / trang khám phá xe)
+    is_default_query = (
+        not any([
+            brand_id, model_id, min_price_vnd, max_price_vnd, min_year, max_year,
+            max_km, body_type, fuel_type, transmission, province_code, search,
+        ])
+        and sort_by == "newest"
+        and page == 1
+    )
+    cache_key = f"listings:default:{page}:{page_size}" if is_default_query else None
+    if cache_key:
+        cached = await fast_cache.get(cache_key)
+        if cached is not None:
+            return cached
+
     params = ListingFilterParams(
         brand_id=brand_id,
         model_id=model_id,
@@ -83,7 +108,7 @@ async def list_listings(
     items, total = await service.get_public_listings(params, page, page_size)
     total_pages = math.ceil(total / page_size) if total > 0 else 0
 
-    return PaginatedResponse(
+    response = PaginatedResponse(
         items=items,
         pagination=PaginationMeta(
             page=page,
@@ -92,6 +117,9 @@ async def list_listings(
             total_pages=total_pages,
         ),
     )
+    if cache_key:
+        await fast_cache.set(cache_key, response, ttl_seconds=30)
+    return response
 
 
 @router.get("/me/summary", response_model=MyListingsSummaryResponse)
@@ -257,10 +285,15 @@ async def get_featured_listings(
     limit: int = Query(6, ge=1, le=24),
     db: AsyncSession = Depends(get_db),
 ):
-    """Lấy danh sách các tin xe nổi bật ưu tiên hiển thị trên trang chủ."""
+    """Lấy danh sách các tin xe nổi bật ưu tiên hiển thị trên trang chủ (Fast Cached)."""
+    cache_key = f"listings:featured:{limit}"
+    cached = await fast_cache.get(cache_key)
+    if cached is not None:
+        return cached
+
     service = ListingService(db)
-    params = ListingFilterParams(is_featured=True, sort_by="newest")
-    items, _ = await service.get_public_listings(params=params, page=1, page_size=limit)
+    items = await service.get_featured_quick(limit=limit)
+    await fast_cache.set(cache_key, items, ttl_seconds=60)
     return items
 
 
@@ -303,9 +336,19 @@ async def get_listing(
     current_user: Optional[User] = Depends(get_optional_user),
     db: AsyncSession = Depends(get_db),
 ):
-    service = ListingService(db)
-    detail = await service.get_listing_detail(id, current_user)
     background_tasks.add_task(_increment_listing_views, id)
+
+    # Fast Cache cho người dùng xem công khai (30 giây)
+    cache_key = f"listings:detail:{id}" if not current_user else None
+    if cache_key:
+        cached = await fast_cache.get(cache_key)
+        if cached is not None:
+            return cached
+
+    service = ListingService(db)
+    detail = await service.get_listing_detail(id, current_user=current_user)
+    if cache_key:
+        await fast_cache.set(cache_key, detail, ttl_seconds=30)
     return detail
 
 
@@ -317,8 +360,12 @@ async def submit_listing_for_review(
 ):
     service = ListingService(db)
     listing = await service.submit_for_review(id, current_user)
+    if listing.status == "PUBLISHED":
+        msg = "Tin đã được hệ thống phê duyệt tự động và xuất bản trực tiếp lên sàn AuraAuto thành công!"
+    else:
+        msg = "Gửi duyệt tin thành công! Tin của bạn sẽ được Ban Quản Trị xét duyệt."
     return SuccessResponse(
-        message="Gửi duyệt tin thành công! Tin của bạn sẽ được Admin xét duyệt.",
+        message=msg,
         data={"id": str(listing.id), "status": listing.status},
     )
 
@@ -331,6 +378,7 @@ async def mark_listing_sold(
 ):
     service = ListingService(db)
     listing = await service.mark_sold(id, current_user)
+    await fast_cache.invalidate_prefix("listings:")
     return SuccessResponse(
         message="Đánh dấu đã bán thành công! Mọi lịch xem xe chưa diễn ra đã được hủy tự động.",
         data={"id": str(listing.id), "status": listing.status},
@@ -453,6 +501,7 @@ async def delete_listing(
         listing.is_featured = False
 
     await db.commit()
+    await fast_cache.invalidate_prefix("listings:")
     return SuccessResponse(message="Đã xóa tin đăng xe thành công!", data={"id": str(id)})
 
 
@@ -479,13 +528,22 @@ async def update_listing(
 ):
     """
     Cập nhật toàn diện tin đăng xe:
-    - Nếu tin đang PUBLISHED: Bản sửa đổi mới sẽ được gửi duyệt (PENDING), trong lúc đó tin công khai trên sàn vẫn giữ nguyên dữ liệu cũ.
-    - Nếu tin đang DRAFT/REJECTED: Tin sẽ chuyển sang PENDING_REVIEW để admin thẩm định lần đầu.
+    - Nếu là Admin/Nhân sự quản trị: Tin và bản sửa đổi mới được tự động duyệt và xuất bản trực tiếp ngay lập tức.
+    - Nếu là người dùng thông thường:
+      + Nếu tin đang PUBLISHED: Bản sửa đổi mới sẽ được gửi duyệt (PENDING), trong lúc đó tin công khai trên sàn vẫn giữ nguyên dữ liệu cũ.
+      + Nếu tin đang DRAFT/REJECTED: Tin sẽ chuyển sang PENDING_REVIEW để admin thẩm định lần đầu.
     """
     service = ListingService(db)
     listing, rev = await service.update_listing(id, data, current_user)
+    await fast_cache.invalidate_prefix("listings:")
+
+    if listing.status == "PUBLISHED" and rev.review_status == "APPROVED":
+        msg = f"Đã cập nhật và xuất bản trực tiếp tin đăng xe (Phiên bản #{rev.revision_no}) thành công!"
+    else:
+        msg = "Đã lưu và gửi bản chỉnh sửa tin đăng xe thành công! Bản tin đang được chuyển tới Ban Quản Trị phê duyệt."
+
     return SuccessResponse(
-        message="Đã lưu và gửi bản chỉnh sửa tin đăng xe thành công! Bản tin đang được chuyển tới Ban Quản Trị phê duyệt.",
+        message=msg,
         data={
             "id": str(listing.id),
             "status": listing.status,
@@ -532,6 +590,7 @@ async def quick_update_listing(
         updated_fields.append("địa chỉ")
 
     await db.commit()
+    await fast_cache.invalidate_prefix("listings:")
     fields_str = ", ".join(updated_fields) if updated_fields else "thông tin"
     return SuccessResponse(
         message=f"Đã cập nhật {fields_str} thành công!",

@@ -9,6 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.security import get_password_hash
 from app.core.email import send_email_sync, render_listing_status_html
 from app.core.cleanup import run_system_maintenance
+from app.core.cache import fast_cache
 from app.modules.chats.ws_manager import ws_manager
 from app.models.user import User
 from app.models.listing import Listing, ListingRevision, ListingStatusEvent, ListingMedia
@@ -378,6 +379,14 @@ class AdminService:
             for e in sorted(listing.status_events, key=lambda x: x.created_at or datetime.min)
         ]
 
+        seller_data = {
+            "id": str(listing.seller.id) if listing.seller else "",
+            "display_name": listing.seller.display_name if listing.seller else "Chưa xác định",
+            "email": listing.seller.email if listing.seller else "",
+            "phone": listing.seller.phone if listing.seller else "",
+            "avatar_url": listing.seller.avatar_url if listing.seller else None,
+        }
+
         return AdminListingDetailResponse(
             id=listing.id,
             status=listing.status,
@@ -417,10 +426,11 @@ class AdminService:
             rejection_reason=rev.rejection_reason,
             published_at=listing.published_at,
             created_at=listing.created_at,
-            seller_id=listing.seller.id,
-            seller_name=listing.seller.display_name,
-            seller_email=listing.seller.email,
-            seller_phone=listing.seller.phone,
+            seller_id=listing.seller.id if listing.seller else None,
+            seller_name=listing.seller.display_name if listing.seller else None,
+            seller_email=listing.seller.email if listing.seller else None,
+            seller_phone=listing.seller.phone if listing.seller else None,
+            seller=seller_data,
             images=images,
             media=media_list,
             events=events,
@@ -487,6 +497,7 @@ class AdminService:
             )
 
         await db.commit()
+        await fast_cache.invalidate_prefix("listings:")
         return SuccessResponse(message="Tin đăng đã được duyệt và công khai thành công!")
 
     async def reject_listing(self, id: uuid.UUID, data: RejectListingRequest, background_tasks: Optional[BackgroundTasks] = None) -> SuccessResponse:
@@ -553,6 +564,7 @@ class AdminService:
             )
 
         await db.commit()
+        await fast_cache.invalidate_prefix("listings:")
         return SuccessResponse(message="Đã cập nhật trạng thái từ chối tin đăng thành công!")
 
     async def takedown_listing(self, id: uuid.UUID, data: TakeDownListingRequest, background_tasks: Optional[BackgroundTasks] = None) -> SuccessResponse:

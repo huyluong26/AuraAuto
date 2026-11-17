@@ -8,6 +8,7 @@ from sqlalchemy.orm import selectinload
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
+from app.core.cache import fast_cache
 from app.models.listing import Listing, ListingRevision
 from app.models.payment import PaymentTransaction, PromotionPackage
 from app.models.notification import Notification
@@ -276,6 +277,7 @@ class PaymentService:
 
             await db.commit()
             await db.refresh(tx)
+            await fast_cache.invalidate_prefix("listings:")
 
             # Đẩy thông báo thời gian thực qua WebSocket
             try:

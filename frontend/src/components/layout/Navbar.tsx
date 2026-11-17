@@ -38,13 +38,13 @@ export default function Navbar() {
 
   return (
     <header className="fixed top-0 inset-x-0 z-50 bg-surface-container-lowest/90 backdrop-blur-xl shadow-[0_1px_8px_rgba(0,0,0,0.04)]">
-      <div className="h-20 w-full px-margin-mobile lg:px-margin flex items-center justify-between">
+      <div className="h-16 sm:h-20 w-full px-3 sm:px-margin-mobile lg:px-margin flex items-center justify-between">
         {/* Brand Name */}
-        <Link className="flex flex-col" href="/">
-          <span className="font-headline-sm text-headline-sm text-primary tracking-tight font-semibold">
+        <Link className="flex flex-col shrink-0 select-none mr-2" href="/">
+          <span className="font-headline-sm text-lg sm:text-headline-sm text-primary tracking-tight font-semibold leading-tight">
             AuraAuto
           </span>
-          <span className="font-label-sm text-label-sm text-secondary tracking-widest uppercase">
+          <span className="font-label-sm text-[9px] sm:text-label-sm text-secondary tracking-widest uppercase leading-none font-medium">
             Luxury Mobility
           </span>
         </Link>
@@ -104,47 +104,56 @@ export default function Navbar() {
         </nav>
 
         {/* Actions */}
-        <div className="flex items-center gap-space-md">
+        <div className="flex items-center gap-1 sm:gap-2 lg:gap-space-md shrink-0">
           <Link
-            className="relative p-space-sm rounded-lg text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-all flex items-center justify-center"
+            className="relative p-1.5 sm:p-space-sm rounded-lg text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-all flex items-center justify-center shrink-0"
             href="/xe-da-luu"
             title="Xe yêu thích"
           >
-            <span className="material-symbols-outlined text-[22px]">favorite</span>
+            <span className="material-symbols-outlined text-[20px] sm:text-[22px]">favorite</span>
             {favoriteCount > 0 && (
-              <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-secondary rounded-full ring-2 ring-surface-container-lowest" />
+              <span className="absolute top-1 sm:top-1.5 right-1 sm:right-1.5 w-2 h-2 bg-secondary rounded-full ring-2 ring-surface-container-lowest" />
             )}
           </Link>
 
           <Link
-            className="inline-flex items-center justify-center px-space-lg py-space-sm rounded-lg bg-primary text-on-primary font-label-lg text-label-lg hover:bg-primary-container transition-colors shadow-[0_4px_16px_rgba(0,0,0,0.08)]"
+            className="inline-flex items-center justify-center gap-1 sm:gap-1.5 px-2.5 sm:px-4 py-1.5 sm:py-2 rounded-lg bg-primary text-on-primary font-semibold text-xs sm:text-label-md hover:bg-inverse-surface transition-all shadow-[0_2px_8px_rgba(0,0,0,0.08)] shrink-0"
             href="/dang-tin"
+            title="Đăng tin bán xe"
           >
-            Đăng tin bán xe miễn phí
+            <span className="material-symbols-outlined text-[16px] sm:text-[18px] text-secondary">add_circle</span>
+            <span>Đăng tin</span>
+            <span className="hidden sm:inline"> bán xe</span>
           </Link>
 
           {/* User Profile or Login Trigger */}
           {isLoaded && isLoggedIn && user ? (
-            <div className="relative" ref={userDropdownRef}>
+            <div className="relative shrink-0" ref={userDropdownRef}>
               <button
                 type="button"
                 onClick={() => setUserMenuOpen((prev) => !prev)}
-                className="flex items-center gap-space-xs px-2.5 py-1.5 rounded-full bg-surface-container hover:bg-surface-container-high transition-colors text-on-surface"
+                className="flex items-center gap-1 sm:gap-space-xs p-1 sm:px-2.5 sm:py-1.5 rounded-full bg-surface-container hover:bg-surface-container-high transition-colors text-on-surface"
                 title="Tài khoản cá nhân"
               >
                 <div className="w-7 h-7 rounded-full bg-primary text-on-primary font-bold text-xs flex items-center justify-center uppercase overflow-hidden shrink-0">
                   {user.avatar_url ? (
                     // eslint-disable-next-line @next/next/no-img-element
-                    <img src={user.avatar_url} alt="Avatar" className="w-full h-full object-cover" />
+                    <img
+                      src={user.avatar_url}
+                      alt="Avatar"
+                      className="w-full h-full object-cover"
+                      crossOrigin="anonymous"
+                      referrerPolicy="no-referrer"
+                    />
                   ) : (
                     (user.full_name || user.email || 'U')[0]
                   )}
                 </div>
-                <span className="hidden sm:inline font-label-md text-label-md max-w-[130px] truncate text-primary font-medium">
+                <span className="hidden md:inline font-label-md text-label-md max-w-[120px] truncate text-primary font-medium">
                   {user.full_name || user.email.split('@')[0]}
                 </span>
                 <span
-                  className="material-symbols-outlined text-[18px] text-on-surface-variant transition-transform duration-200"
+                  className="hidden sm:inline material-symbols-outlined text-[18px] text-on-surface-variant transition-transform duration-200"
                   style={{ transform: userMenuOpen ? 'rotate(180deg)' : 'none' }}
                 >
                   expand_more
@@ -230,19 +239,19 @@ export default function Navbar() {
               )}
             </div>
           ) : (
-            <div className="flex items-center gap-space-xs">
+            <div className="flex items-center gap-1 sm:gap-space-xs shrink-0">
               <Link
-                className="hidden sm:inline-flex items-center px-space-md py-space-sm rounded-lg font-label-lg text-label-lg text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-all"
+                className="hidden md:inline-flex items-center px-3 py-1.5 rounded-lg font-label-md text-label-md text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-all"
                 href="/dang-nhap"
               >
                 Đăng nhập
               </Link>
               <Link
                 href="/dang-nhap"
-                className="w-8 h-8 rounded-full bg-primary flex items-center justify-center ml-space-xs text-on-primary hover:bg-primary-container transition-colors"
+                className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-primary flex items-center justify-center text-on-primary hover:bg-primary-container transition-colors shrink-0"
                 title="Đăng nhập tài khoản"
               >
-                <span className="material-symbols-outlined text-on-primary text-[18px]">person</span>
+                <span className="material-symbols-outlined text-on-primary text-[17px] sm:text-[18px]">person</span>
               </Link>
             </div>
           )}
@@ -251,10 +260,10 @@ export default function Navbar() {
           <button
             type="button"
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="lg:hidden p-space-sm rounded-lg text-on-surface-variant hover:text-on-surface"
+            className="lg:hidden p-1.5 sm:p-2 rounded-lg text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-colors shrink-0"
             aria-label="Toggle Navigation Menu"
           >
-            <span className="material-symbols-outlined text-[24px]">
+            <span className="material-symbols-outlined text-[22px] sm:text-[24px]">
               {mobileMenuOpen ? 'close' : 'menu'}
             </span>
           </button>
@@ -263,46 +272,46 @@ export default function Navbar() {
 
       {/* Mobile Menu Drawer */}
       {mobileMenuOpen && (
-        <div className="lg:hidden border-b border-surface-container-high bg-surface-container-lowest px-margin-mobile py-space-md space-y-space-sm shadow-lg">
+        <div className="lg:hidden border-b border-surface-container-high bg-surface-container-lowest/98 backdrop-blur-xl px-4 py-4 space-y-2 shadow-xl max-h-[calc(100vh-4rem)] overflow-y-auto">
           <Link
             href="/"
             onClick={() => setMobileMenuOpen(false)}
-            className="block py-2 font-label-lg text-label-lg text-on-surface-variant hover:text-primary"
+            className="block py-2 px-2.5 rounded-lg font-label-lg text-label-lg text-on-surface-variant hover:text-primary hover:bg-surface-container-low transition-colors"
           >
             Trang chủ
           </Link>
           <Link
             href="/xe"
             onClick={() => setMobileMenuOpen(false)}
-            className="block py-2 font-label-lg text-label-lg text-on-surface-variant hover:text-primary"
+            className="block py-2 px-2.5 rounded-lg font-label-lg text-label-lg text-on-surface-variant hover:text-primary hover:bg-surface-container-low transition-colors"
           >
             Khám phá xe
           </Link>
           <Link
             href="/dinh-gia-ai"
             onClick={() => setMobileMenuOpen(false)}
-            className="block py-2 font-label-lg text-label-lg text-secondary hover:text-primary font-semibold"
+            className="block py-2 px-2.5 rounded-lg font-label-lg text-label-lg text-secondary hover:text-primary font-semibold hover:bg-surface-container-low transition-colors"
           >
             Định giá xe AI
           </Link>
           <Link
             href="/lich-hen"
             onClick={() => setMobileMenuOpen(false)}
-            className="block py-2 font-label-lg text-label-lg text-on-surface-variant hover:text-primary"
+            className="block py-2 px-2.5 rounded-lg font-label-lg text-label-lg text-on-surface-variant hover:text-primary hover:bg-surface-container-low transition-colors"
           >
             Lịch xem xe
           </Link>
           <Link
             href="/tin-tuc"
             onClick={() => setMobileMenuOpen(false)}
-            className="block py-2 font-label-lg text-label-lg text-on-surface-variant hover:text-primary"
+            className="block py-2 px-2.5 rounded-lg font-label-lg text-label-lg text-on-surface-variant hover:text-primary hover:bg-surface-container-low transition-colors"
           >
             Tin tức & Thị trường
           </Link>
           <Link
             href="/xe-da-luu"
             onClick={() => setMobileMenuOpen(false)}
-            className="flex items-center justify-between py-2 font-label-lg text-label-lg text-on-surface-variant hover:text-primary"
+            className="flex items-center justify-between py-2 px-2.5 rounded-lg font-label-lg text-label-lg text-on-surface-variant hover:text-primary hover:bg-surface-container-low transition-colors"
           >
             <span>Xe đã lưu quan tâm</span>
             {favoriteCount > 0 && (
@@ -313,12 +322,18 @@ export default function Navbar() {
           </Link>
 
           {isLoaded && isLoggedIn && user ? (
-            <div className="pt-space-sm border-t border-surface-container-high flex flex-col gap-space-xs">
+            <div className="pt-2 border-t border-surface-container-high flex flex-col gap-2">
               <div className="p-3 rounded-lg bg-surface-container-low flex items-center gap-3">
                 <div className="w-10 h-10 rounded-full bg-primary text-on-primary font-bold text-sm flex items-center justify-center uppercase overflow-hidden shrink-0">
                   {user.avatar_url ? (
                     // eslint-disable-next-line @next/next/no-img-element
-                    <img src={user.avatar_url} alt="Avatar" className="w-full h-full object-cover" />
+                    <img
+                      src={user.avatar_url}
+                      alt="Avatar"
+                      className="w-full h-full object-cover"
+                      crossOrigin="anonymous"
+                      referrerPolicy="no-referrer"
+                    />
                   ) : (
                     (user.full_name || user.email || 'U')[0]
                   )}
@@ -342,7 +357,7 @@ export default function Navbar() {
                 <Link
                   href="/admin"
                   onClick={() => setMobileMenuOpen(false)}
-                  className="py-2.5 text-center rounded-lg bg-secondary-container hover:bg-secondary-fixed border border-secondary/30 text-on-secondary-container font-label-md text-label-md font-bold flex items-center justify-center gap-2 transition-colors"
+                  className="py-2.5 px-3 text-center rounded-lg bg-secondary-container hover:bg-secondary-fixed border border-secondary/30 text-on-secondary-container font-label-md text-label-md font-bold flex items-center justify-center gap-2 transition-colors"
                 >
                   <span className="material-symbols-outlined text-[18px] text-secondary">shield_person</span>
                   <span>Vào Trang Quản trị (Admin)</span>
@@ -351,7 +366,7 @@ export default function Navbar() {
               <Link
                 href="/tai-khoan"
                 onClick={() => setMobileMenuOpen(false)}
-                className="py-2.5 text-center rounded-lg bg-surface-container-high text-primary font-label-md text-label-md font-semibold hover:bg-surface-container-highest transition-colors flex items-center justify-center gap-1.5"
+                className="py-2.5 px-3 text-center rounded-lg bg-surface-container-high text-primary font-label-md text-label-md font-semibold hover:bg-surface-container-highest transition-colors flex items-center justify-center gap-1.5"
               >
                 <span className="material-symbols-outlined text-[18px] text-secondary">manage_accounts</span>
                 <span>Hồ sơ & Tài khoản của tôi</span>
@@ -359,7 +374,7 @@ export default function Navbar() {
               <Link
                 href="/quan-ly-tin"
                 onClick={() => setMobileMenuOpen(false)}
-                className="py-2.5 text-center rounded-lg bg-surface-container-high text-primary font-label-md text-label-md font-semibold hover:bg-surface-container-highest transition-colors flex items-center justify-center gap-1.5"
+                className="py-2.5 px-3 text-center rounded-lg bg-surface-container-high text-primary font-label-md text-label-md font-semibold hover:bg-surface-container-highest transition-colors flex items-center justify-center gap-1.5"
               >
                 <span className="material-symbols-outlined text-[18px] text-secondary">directions_car</span>
                 <span>Quản lý tin đăng</span>
@@ -367,9 +382,10 @@ export default function Navbar() {
               <Link
                 href="/dang-tin"
                 onClick={() => setMobileMenuOpen(false)}
-                className="py-2.5 text-center rounded-lg bg-primary text-on-primary font-label-md text-label-md font-semibold"
+                className="py-2.5 px-3 text-center rounded-lg bg-primary text-on-primary font-label-md text-label-md font-semibold hover:bg-inverse-surface transition-colors flex items-center justify-center gap-1.5 shadow-xs"
               >
-                Đăng tin bán xe miễn phí
+                <span className="material-symbols-outlined text-[18px] text-secondary">add_circle</span>
+                <span>Đăng tin bán xe</span>
               </Link>
               <button
                 type="button"
@@ -377,24 +393,24 @@ export default function Navbar() {
                   setMobileMenuOpen(false);
                   logout();
                 }}
-                className="py-2.5 text-center rounded-lg bg-error-container text-on-error-container font-label-md text-label-md font-semibold hover:opacity-90 transition-opacity"
+                className="py-2.5 px-3 text-center rounded-lg bg-error-container text-on-error-container font-label-md text-label-md font-semibold hover:opacity-90 transition-opacity"
               >
                 Đăng xuất
               </button>
             </div>
           ) : (
-            <div className="pt-space-sm border-t border-surface-container-high flex flex-col gap-space-xs">
+            <div className="pt-2 border-t border-surface-container-high flex flex-col gap-2">
               <Link
                 href="/dang-nhap"
                 onClick={() => setMobileMenuOpen(false)}
-                className="py-2.5 text-center rounded-lg bg-surface-container-low font-label-md text-label-md font-semibold text-primary"
+                className="py-2.5 px-3 text-center rounded-lg bg-surface-container-low font-label-md text-label-md font-semibold text-primary"
               >
                 Đăng nhập / Đăng ký
               </Link>
               <Link
                 href="/tai-khoan"
                 onClick={() => setMobileMenuOpen(false)}
-                className="py-2.5 text-center rounded-lg bg-surface-container-high text-primary font-label-md text-label-md font-semibold hover:bg-surface-container-highest transition-colors flex items-center justify-center gap-1.5"
+                className="py-2.5 px-3 text-center rounded-lg bg-surface-container-high text-primary font-label-md text-label-md font-semibold hover:bg-surface-container-highest transition-colors flex items-center justify-center gap-1.5"
               >
                 <span className="material-symbols-outlined text-[18px] text-secondary">manage_accounts</span>
                 <span>Hồ sơ & Tài khoản của tôi</span>
@@ -402,7 +418,7 @@ export default function Navbar() {
               <Link
                 href="/quan-ly-tin"
                 onClick={() => setMobileMenuOpen(false)}
-                className="py-2.5 text-center rounded-lg bg-surface-container-high text-primary font-label-md text-label-md font-semibold hover:bg-surface-container-highest transition-colors flex items-center justify-center gap-1.5"
+                className="py-2.5 px-3 text-center rounded-lg bg-surface-container-high text-primary font-label-md text-label-md font-semibold hover:bg-surface-container-highest transition-colors flex items-center justify-center gap-1.5"
               >
                 <span className="material-symbols-outlined text-[18px] text-secondary">directions_car</span>
                 <span>Quản lý tin đăng</span>
@@ -410,9 +426,10 @@ export default function Navbar() {
               <Link
                 href="/dang-tin"
                 onClick={() => setMobileMenuOpen(false)}
-                className="py-2.5 text-center rounded-lg bg-primary text-on-primary font-label-md text-label-md font-semibold"
+                className="py-2.5 px-3 text-center rounded-lg bg-primary text-on-primary font-label-md text-label-md font-semibold hover:bg-inverse-surface transition-colors flex items-center justify-center gap-1.5 shadow-xs"
               >
-                Đăng tin bán xe miễn phí
+                <span className="material-symbols-outlined text-[18px] text-secondary">add_circle</span>
+                <span>Đăng tin bán xe</span>
               </Link>
             </div>
           )}

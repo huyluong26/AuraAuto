@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime
 from typing import Optional, List
-from sqlalchemy import String, Text, Boolean, DateTime, ForeignKey
+from sqlalchemy import String, Text, Boolean, DateTime, ForeignKey, Index
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -24,6 +24,10 @@ class Showroom(BaseModel):
     verified_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
     verified_by_user_id: Mapped[Optional[uuid.UUID]] = mapped_column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
     rejection_reason: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+
+    __table_args__ = (
+        Index("idx_showrooms_owner_user", "owner_user_id"),
+    )
 
     # Relationships
     owner: Mapped["User"] = relationship("User", back_populates="showrooms", foreign_keys=[owner_user_id])

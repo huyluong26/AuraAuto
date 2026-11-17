@@ -1,20 +1,24 @@
+import os
 from typing import AsyncGenerator
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.orm import declarative_base
 
 from app.core.config import settings
 
-# Engine configuration
+# Engine configuration: disable SQL stdout echo by default to avoid blocking Python async loop
+sql_echo = os.getenv("SQL_ECHO", "false").lower() in ("true", "1", "yes")
 engine_kwargs = {
-    "echo": settings.DEBUG and settings.ENVIRONMENT == "development",
+    "echo": sql_echo,
     "future": True,
 }
 
-# If PostgreSQL, set pool options
+# If PostgreSQL, set optimized pool options for cloud/Neon database
 if "postgresql" in settings.DATABASE_URL:
     engine_kwargs.update({
-        "pool_size": 10,
-        "max_overflow": 20,
+        "pool_size": 20,
+        "max_overflow": 30,
+        "pool_recycle": 300,
+        "pool_timeout": 15,
         "pool_pre_ping": True,
     })
 

@@ -49,6 +49,8 @@ export function SellerContactCard({
               src={listing.seller.avatar_url}
               alt={sellerName}
               className="w-11 h-11 rounded-full object-cover shadow-2xs group-hover/seller:ring-2 ring-secondary/50 transition-all"
+              crossOrigin="anonymous"
+              referrerPolicy="no-referrer"
             />
           ) : (
             <div className={`w-11 h-11 rounded-full flex items-center justify-center font-bold text-base shadow-2xs uppercase group-hover/seller:ring-2 ring-secondary/50 transition-all ${

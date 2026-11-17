@@ -16,6 +16,25 @@ import {
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
 
+// Client-side in-memory cache for static catalog and options (0ms read time in browser)
+const clientMemoryCache = new Map<string, { data: any; expiry: number }>();
+
+function getClientCache<T>(key: string): T | null {
+  if (typeof window === 'undefined') return null;
+  const entry = clientMemoryCache.get(key);
+  if (!entry) return null;
+  if (Date.now() > entry.expiry) {
+    clientMemoryCache.delete(key);
+    return null;
+  }
+  return entry.data as T;
+}
+
+function setClientCache(key: string, data: any, ttlSeconds: number = 300): void {
+  if (typeof window === 'undefined') return;
+  clientMemoryCache.set(key, { data, expiry: Date.now() + ttlSeconds * 1000 });
+}
+
 export function formatVND(amount?: number | null): string {
   if (amount === undefined || amount === null || amount <= 0) return 'Thỏa thuận';
   if (amount >= 1_000_000_000) {
@@ -228,13 +247,17 @@ export const api = {
         }
       });
     }
-    const res = await fetch(`${API_BASE}/listings?${searchParams.toString()}`, { cache: 'no-store' });
+    const isHomepageOrStatic = !params || (Object.keys(params).length === 1 && params.page_size === 12);
+    const fetchOptions: RequestInit = isHomepageOrStatic
+      ? { next: { revalidate: 30 } }
+      : { cache: 'no-store' };
+    const res = await fetch(`${API_BASE}/listings?${searchParams.toString()}`, fetchOptions);
     if (!res.ok) throw new Error('Không thể tải danh sách xe');
     return res.json();
   },
 
   async getListingById(id: string): Promise<ListingDetail> {
-    const res = await fetch(`${API_BASE}/listings/${id}`, { cache: 'no-store' });
+    const res = await fetch(`${API_BASE}/listings/${id}`, { next: { revalidate: 30 } });
     if (!res.ok) throw new Error('Không tìm thấy thông tin xe');
     return res.json();
   },
@@ -547,15 +570,26 @@ export const api = {
 
   // Catalog
   async getBrands(): Promise<Array<{ id: string; name: string; slug: string; logo_url: string | null }>> {
-    const res = await fetch(`${API_BASE}/catalog/brands`, { cache: 'no-store' });
+    const cached = getClientCache<Array<{ id: string; name: string; slug: string; logo_url: string | null }>>('catalog:brands');
+    if (cached) return cached;
+
+    const res = await fetch(`${API_BASE}/catalog/brands`, { next: { revalidate: 3600 } });
     if (!res.ok) throw new Error('Không thể tải danh sách hãng xe');
-    return res.json();
+    const data = await res.json();
+    setClientCache('catalog:brands', data, 1800);
+    return data;
   },
 
   async getModelsByBrand(brandId: string): Promise<Array<{ id: string; brand_id: string; name: string; slug: string; body_type: string }>> {
-    const res = await fetch(`${API_BASE}/catalog/brands/${brandId}/models`, { cache: 'no-store' });
+    const cacheKey = `catalog:models:${brandId}`;
+    const cached = getClientCache<Array<{ id: string; brand_id: string; name: string; slug: string; body_type: string }>>(cacheKey);
+    if (cached) return cached;
+
+    const res = await fetch(`${API_BASE}/catalog/brands/${brandId}/models`, { next: { revalidate: 3600 } });
     if (!res.ok) throw new Error('Không thể tải danh sách dòng xe');
-    return res.json();
+    const data = await res.json();
+    setClientCache(cacheKey, data, 1800);
+    return data;
   },
 
   async resolveBrandModel(data: {
@@ -1090,13 +1124,17 @@ export const api = {
     if (params?.limit) searchParams.append('limit', String(params.limit));
     if (params?.offset) searchParams.append('offset', String(params.offset));
 
-    const res = await fetch(`${API_BASE}/articles?${searchParams.toString()}`, { cache: 'no-store' });
+    const isPublicDefault = !params?.category && !params?.search && (!params?.offset || params.offset === 0);
+    const fetchOptions: RequestInit = isPublicDefault
+      ? { next: { revalidate: 60 } }
+      : { cache: 'no-store' };
+    const res = await fetch(`${API_BASE}/articles?${searchParams.toString()}`, fetchOptions);
     if (!res.ok) throw new Error('Không thể tải danh sách bài viết');
     return res.json();
   },
 
   async getArticleDetail(idOrSlug: string): Promise<ArticleDetail> {
-    const res = await fetch(`${API_BASE}/articles/${idOrSlug}`, { cache: 'no-store' });
+    const res = await fetch(`${API_BASE}/articles/${idOrSlug}`, { next: { revalidate: 60 } });
     if (!res.ok) throw new Error('Không tìm thấy bài viết');
     return res.json();
   },
@@ -1889,7 +1927,7 @@ export const api = {
 
   // Promotion & VNPay Payments
   async getFeaturedListings(limit: number = 6): Promise<ListingItem[]> {
-    const res = await fetch(`${API_BASE}/listings/featured?limit=${limit}`, { cache: 'no-store' });
+    const res = await fetch(`${API_BASE}/listings/featured?limit=${limit}`, { next: { revalidate: 30 } });
     if (!res.ok) return [];
     return res.json();
   },
@@ -1903,9 +1941,14 @@ export const api = {
     badge?: string;
     color?: string;
   }[]> {
-    const res = await fetch(`${API_BASE}/payments/packages`, { cache: 'no-store' });
+    const cached = getClientCache<any>('payments:packages');
+    if (cached) return cached;
+
+    const res = await fetch(`${API_BASE}/payments/packages`, { next: { revalidate: 3600 } });
     if (!res.ok) return [];
-    return res.json();
+    const data = await res.json();
+    setClientCache('payments:packages', data, 1800);
+    return data;
   },
 
   async createPromotionPayment(data: {

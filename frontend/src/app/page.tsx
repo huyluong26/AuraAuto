@@ -15,7 +15,7 @@ import { ListingItem, ArticleItem } from '@/types';
 import { PROVINCE_MAP } from '@/features/auth/constants/provinces';
 import { detectProvinceFromText } from '@/features/car-listing/constants';
 
-export const dynamic = 'force-dynamic';
+export const revalidate = 30;
 
 export const metadata = {
   title: 'AuraAuto - Nền tảng Giao dịch & Thẩm định Ô tô Cao cấp',
@@ -60,30 +60,24 @@ export default async function HomePage() {
   let latestArticles: ArticleItem[] = [];
 
   try {
-    const featuredRes = await api.getFeaturedListings(6);
+    // Tối ưu hóa hiệu năng: Tải song song (Parallel Fetching) thay vì chờ tuần tự (Waterfall)
+    const [featuredRes, listingsRes, articlesRes] = await Promise.all([
+      api.getFeaturedListings(6).catch(() => []),
+      api.getListings({ page_size: 12 }).catch(() => ({ items: [] })),
+      api.getArticles({ limit: 4 }).catch(() => []),
+    ]);
+
     if (featuredRes && featuredRes.length > 0) {
       featuredCars = featuredRes.map(mapListingToLuxuryCar);
     }
-  } catch {
-    featuredCars = [];
-  }
-
-  try {
-    const res = await api.getListings({ page_size: 12 });
-    if (res && res.items && res.items.length > 0) {
-      liveCars = res.items.map(mapListingToLuxuryCar);
+    if (listingsRes && listingsRes.items && listingsRes.items.length > 0) {
+      liveCars = listingsRes.items.map(mapListingToLuxuryCar);
     }
-  } catch {
-    liveCars = [];
-  }
-
-  try {
-    const articlesRes = await api.getArticles({ limit: 4 });
     if (articlesRes && articlesRes.length > 0) {
       latestArticles = articlesRes;
     }
   } catch {
-    latestArticles = [];
+    // Fail-safe graceful fallback
   }
 
   const latestCars = liveCars.slice(0, 8);

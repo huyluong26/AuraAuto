@@ -209,7 +209,11 @@ class AdminListingDetailResponse(BaseModel):
     review_status: str = "APPROVED"
     has_pending_revision: bool = False
     published_revision: Optional[Dict[str, Any]] = None
-    seller: Dict[str, Any]
+    seller_id: Optional[uuid.UUID] = None
+    seller_name: Optional[str] = None
+    seller_email: Optional[str] = None
+    seller_phone: Optional[str] = None
+    seller: Dict[str, Any] = Field(default_factory=dict)
     created_at: datetime
     published_at: Optional[datetime] = None
     rejection_reason: Optional[str] = None

@@ -57,37 +57,38 @@ export function useCarDetail(id: string) {
         setSimilarLoading(true);
         (async () => {
           try {
-            // 1. Ưu tiên 1: Tin nổi bật
-            const featuredList = await api.getFeaturedListings(8).catch(() => []);
+            // Tải song song gợi ý xe nổi bật và xe cùng hãng (Parallel Non-blocking Fetch)
+            const brandKeyword = data.brand_name || data.title?.trim().split(' ')[0] || '';
+            const [featuredList, brandRes] = await Promise.all([
+              api.getFeaturedListings(8).catch(() => []),
+              api
+                .getListings({
+                  brand_id: data.brand_id || undefined,
+                  search: data.brand_id ? undefined : (brandKeyword || undefined),
+                  page_size: 8,
+                })
+                .catch(() => null),
+            ]);
+
+            // 1. Ưu tiên tin nổi bật
             const validFeatured = (featuredList || []).filter(
               (c) => String(c.id).toLowerCase() !== String(data.id).toLowerCase()
             );
-
             if (validFeatured.length > 0) {
               if (mounted) setSimilarCars(validFeatured.slice(0, 4));
               return;
             }
 
-            // 2. Ưu tiên 2: Xe cùng hãng
-            const brandKeyword = data.brand_name || data.title?.trim().split(' ')[0] || '';
-            const brandRes = await api
-              .getListings({
-                brand_id: data.brand_id || undefined,
-                search: data.brand_id ? undefined : (brandKeyword || undefined),
-                page_size: 8,
-              })
-              .catch(() => null);
-
+            // 2. Ưu tiên xe cùng hãng
             const sameBrandCars = (brandRes?.items || []).filter(
               (c) => String(c.id).toLowerCase() !== String(data.id).toLowerCase()
             );
-
             if (sameBrandCars.length > 0) {
               if (mounted) setSimilarCars(sameBrandCars.slice(0, 4));
               return;
             }
 
-            // 3. Ưu tiên 3: Xe khác trong hệ thống
+            // 3. Fallback xe khác
             const generalRes = await api.getListings({ page_size: 8 }).catch(() => null);
             const otherCars = (generalRes?.items || []).filter(
               (c) => String(c.id).toLowerCase() !== String(data.id).toLowerCase()

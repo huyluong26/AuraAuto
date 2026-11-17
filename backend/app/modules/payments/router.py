@@ -7,6 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
 from app.core.database import get_db
+from app.core.cache import fast_cache
 from app.core.deps import get_current_active_user
 from app.models.user import User
 from app.modules.payments.schemas import (
@@ -27,8 +28,15 @@ router = APIRouter(prefix="/payments", tags=["Payments & Promotions"])
 async def get_promotion_packages(
     db: AsyncSession = Depends(get_db),
 ):
-    """Lấy danh sách các gói đẩy tin nổi bật (1 ngày, 3 ngày, 1 tuần, 1 tháng)."""
-    return await payment_service.get_packages(db)
+    """Lấy danh sách các gói đẩy tin nổi bật (1 ngày, 3 ngày, 1 tuần, 1 tháng) - Fast Cached."""
+    cache_key = "payments:packages"
+    cached = await fast_cache.get(cache_key)
+    if cached is not None:
+        return cached
+
+    packages = await payment_service.get_packages(db)
+    await fast_cache.set(cache_key, packages, ttl_seconds=3600)
+    return packages
 
 
 @router.post("/create-promotion", response_model=CreatePromotionResponse)

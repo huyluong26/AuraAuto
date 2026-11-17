@@ -41,6 +41,7 @@ class Listing(BaseModel):
         Index("idx_listing_seller_status", "seller_user_id", "status"),
         Index("idx_listing_status_published_at", "status", "published_at"),
         Index("idx_listing_featured", "status", "is_featured", "featured_until"),
+        Index("idx_listings_published_revision", "published_revision_id"),
     )
 
     # Relationships
@@ -106,6 +107,12 @@ class ListingRevision(BaseModel):
         CheckConstraint("manufacture_year BETWEEN 1900 AND 2100", name="ck_revision_year_range"),
         Index("uq_listing_revision_no", "listing_id", "revision_no", unique=True),
         Index("idx_revision_listing_review", "listing_id", "review_status"),
+        Index("idx_revisions_brand_id", "brand_id"),
+        Index("idx_revisions_price_vnd", "price_vnd"),
+        Index("idx_revisions_manufacture_year", "manufacture_year"),
+        Index("idx_revisions_province_code", "province_code"),
+        Index("idx_revisions_body_type", "body_type"),
+        Index("idx_revisions_odometer_km", "odometer_km"),
     )
 
     # Relationships
@@ -127,6 +134,10 @@ class ListingMedia(BaseModel):
     sort_order: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     is_primary: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     label: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
+
+    __table_args__ = (
+        Index("idx_media_revision_primary", "revision_id", "is_primary"),
+    )
 
     # Relationships
     revision: Mapped["ListingRevision"] = relationship("ListingRevision", back_populates="media")

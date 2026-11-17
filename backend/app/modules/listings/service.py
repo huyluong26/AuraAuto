@@ -5,6 +5,7 @@ from sqlalchemy import select, func, and_, or_, desc, asc, case
 from sqlalchemy.orm import selectinload
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.cache import fast_cache
 from app.models.listing import Listing, ListingRevision, ListingMedia, ListingStatusEvent
 from app.models.appointment import Appointment, AppointmentEvent
 from app.models.notification import Notification
@@ -130,26 +131,106 @@ class ListingService:
 
         if not listing:
             raise NotFoundException("Tin đăng không tồn tại")
-        if listing.seller_user_id != user.id:
+        if listing.seller_user_id != user.id and user.role != "ADMIN":
             raise ForbiddenException("Bạn không phải chủ sở hữu của tin đăng này")
         if listing.status not in ["DRAFT", "REJECTED"]:
             raise ConflictException(f"Tin đăng đang ở trạng thái {listing.status}, không thể gửi duyệt lại")
 
-        listing.status = "PENDING_REVIEW"
         latest_rev = max(listing.revisions, key=lambda r: r.revision_no)
-        latest_rev.review_status = "PENDING"
+        old_status = listing.status
+        now_utc = datetime.now(timezone.utc)
+        is_internal_staff = user.role in ("ADMIN", "INSPECTOR", "SUPPORT")
 
-        event = ListingStatusEvent(
-            listing_id=listing.id,
-            actor_user_id=user.id,
-            from_status="DRAFT",
-            to_status="PENDING_REVIEW",
-            reason="Người bán gửi yêu cầu duyệt tin",
-        )
+        if is_internal_staff:
+            listing.status = "PUBLISHED"
+            listing.published_revision_id = latest_rev.id
+            listing.published_at = listing.published_at or now_utc
+
+            latest_rev.review_status = "APPROVED"
+            latest_rev.reviewed_at = now_utc
+            latest_rev.reviewed_by_user_id = user.id
+            latest_rev.rejection_reason = None
+
+            event = ListingStatusEvent(
+                listing_id=listing.id,
+                actor_user_id=user.id,
+                from_status=old_status,
+                to_status="PUBLISHED",
+                reason="Quản trị viên đăng tin - Hệ thống tự động phê duyệt và xuất bản trực tiếp",
+            )
+        else:
+            listing.status = "PENDING_REVIEW"
+            latest_rev.review_status = "PENDING"
+
+            event = ListingStatusEvent(
+                listing_id=listing.id,
+                actor_user_id=user.id,
+                from_status=old_status,
+                to_status="PENDING_REVIEW",
+                reason="Người bán gửi yêu cầu duyệt tin",
+            )
         self.db.add(event)
         await self.db.commit()
         await self.db.refresh(listing)
         return listing
+
+    async def get_featured_quick(self, limit: int = 6) -> List[ListingListItemResponse]:
+        """Truy vấn siêu tốc danh sách tin xe nổi bật VIP cho trang chủ (1 SQL query duy nhất)."""
+        now_utc = datetime.now(timezone.utc)
+        stmt = (
+            select(Listing, ListingRevision, User, Showroom, ListingMedia.url)
+            .join(ListingRevision, Listing.published_revision_id == ListingRevision.id)
+            .join(User, Listing.seller_user_id == User.id)
+            .outerjoin(Showroom, Listing.showroom_id == Showroom.id)
+            .outerjoin(
+                ListingMedia,
+                and_(
+                    ListingMedia.revision_id == ListingRevision.id,
+                    ListingMedia.is_primary.is_(True),
+                ),
+            )
+            .where(
+                Listing.status == "PUBLISHED",
+                Listing.is_featured.is_(True),
+                Listing.featured_until >= now_utc,
+            )
+            .order_by(desc(Listing.featured_until), desc(Listing.published_at))
+            .limit(limit)
+        )
+        res = await self.db.execute(stmt)
+        rows = res.all()
+
+        items: List[ListingListItemResponse] = []
+        for listing, rev, seller, sr, primary_img in rows:
+            is_sr = listing.showroom_id is not None or (sr is not None)
+            items.append(
+                ListingListItemResponse(
+                    id=listing.id,
+                    status=listing.status,
+                    title=rev.title,
+                    price_vnd=rev.price_vnd,
+                    manufacture_year=rev.manufacture_year,
+                    odometer_km=rev.odometer_km,
+                    body_type=rev.body_type,
+                    fuel_type=rev.fuel_type,
+                    transmission=rev.transmission,
+                    province_code=rev.province_code,
+                    location_address=rev.location_address,
+                    primary_image_url=primary_img,
+                    seller_id=seller.id,
+                    seller_name=seller.display_name,
+                    seller_type="SHOWROOM" if is_sr else "INDIVIDUAL",
+                    showroom_id=listing.showroom_id,
+                    showroom_name=sr.name if sr else None,
+                    is_showroom_verified=sr.is_verified if sr else False,
+                    is_featured=True,
+                    featured_until=listing.featured_until,
+                    featured_tier=listing.featured_tier,
+                    published_at=listing.published_at,
+                    created_at=listing.created_at,
+                )
+            )
+        return items
 
     async def get_public_listings(
         self,
@@ -157,45 +238,65 @@ class ListingService:
         page: int = 1,
         page_size: int = 20,
     ) -> Tuple[List[ListingListItemResponse], int]:
-        # Filter on published listings
+        # Tối ưu hóa truy vấn: Direct Outer Join ListingMedia cho ảnh chính (Loại bỏ N+1 và selectinload round-trip)
         query = (
-            select(Listing, ListingRevision, User, Showroom)
+            select(Listing, ListingRevision, User, Showroom, ListingMedia.url)
             .join(ListingRevision, Listing.published_revision_id == ListingRevision.id)
             .join(User, Listing.seller_user_id == User.id)
             .outerjoin(Showroom, Listing.showroom_id == Showroom.id)
-            .options(selectinload(ListingRevision.media))
+            .outerjoin(
+                ListingMedia,
+                and_(
+                    ListingMedia.revision_id == ListingRevision.id,
+                    ListingMedia.is_primary.is_(True),
+                ),
+            )
             .where(Listing.status == "PUBLISHED")
         )
+
+        has_revision_filters = False
 
         # Filters
         if params.brand_id:
             query = query.where(ListingRevision.brand_id == params.brand_id)
+            has_revision_filters = True
         if params.model_id:
             query = query.where(ListingRevision.model_id == params.model_id)
+            has_revision_filters = True
         if params.min_price_vnd:
             query = query.where(ListingRevision.price_vnd >= params.min_price_vnd)
+            has_revision_filters = True
         if params.max_price_vnd:
             query = query.where(ListingRevision.price_vnd <= params.max_price_vnd)
+            has_revision_filters = True
         if params.min_year:
             query = query.where(ListingRevision.manufacture_year >= params.min_year)
+            has_revision_filters = True
         if params.max_year:
             query = query.where(ListingRevision.manufacture_year <= params.max_year)
+            has_revision_filters = True
         if params.max_km:
             query = query.where(ListingRevision.odometer_km <= params.max_km)
+            has_revision_filters = True
         if params.body_type:
             bt = params.body_type.strip()
             query = query.where(or_(ListingRevision.body_type.ilike(f"%{bt}%"), ListingRevision.body_type == bt.upper()))
+            has_revision_filters = True
         if params.fuel_type:
             ft = params.fuel_type.strip()
             query = query.where(or_(ListingRevision.fuel_type.ilike(f"%{ft}%"), ListingRevision.fuel_type == ft.upper()))
+            has_revision_filters = True
         if params.transmission:
             tr = params.transmission.strip()
             query = query.where(or_(ListingRevision.transmission.ilike(f"%{tr}%"), ListingRevision.transmission == tr.upper()))
+            has_revision_filters = True
         if params.province_code:
             query = query.where(ListingRevision.province_code == params.province_code)
+            has_revision_filters = True
         if params.is_featured is True:
             now_utc = datetime.now(timezone.utc)
             query = query.where(Listing.is_featured.is_(True), Listing.featured_until >= now_utc)
+            has_revision_filters = True
         if params.search:
             pattern = f"%{params.search.strip()}%"
             query = query.where(
@@ -204,13 +305,7 @@ class ListingService:
                     ListingRevision.description.ilike(pattern),
                 )
             )
-
-        # Count total efficiently without eager loading media & relation payloads
-        count_query = select(func.count()).select_from(
-            query.with_only_columns(Listing.id).order_by(None).subquery()
-        )
-        total_res = await self.db.execute(count_query)
-        total = total_res.scalar_one()
+            has_revision_filters = True
 
         # Priority: Ưu tiên các tin xe có gói nổi bật VIP đang còn hạn hiển thị lên đầu
         now_utc = datetime.now(timezone.utc)
@@ -232,20 +327,26 @@ class ListingService:
         else:
             query = query.order_by(desc(Listing.published_at))
 
-        # Pagination
-        query = query.offset((page - 1) * page_size).limit(page_size)
-        res = await self.db.execute(query)
+        # Pagination & Query execution
+        paginated_query = query.offset((page - 1) * page_size).limit(page_size)
+        res = await self.db.execute(paginated_query)
         rows = res.all()
 
-        items: List[ListingListItemResponse] = []
-        for listing, rev, seller, sr in rows:
-            # Resolve primary image from eager-loaded media without N+1 queries
-            media_list = rev.media or []
-            primary_media = next((m for m in media_list if m.is_primary), None)
-            if not primary_media and media_list:
-                primary_media = media_list[0]
-            primary_img = primary_media.url if primary_media else None
+        # Fast Count: Nếu trang đầu tiên và kết quả ít hơn page_size thì biết chắc chắn tổng số
+        if page == 1 and len(rows) < page_size:
+            total = len(rows)
+        elif not has_revision_filters:
+            # Query count nhanh từ index idx_listing_status_published_at
+            total_stmt = select(func.count(Listing.id)).where(Listing.status == "PUBLISHED")
+            total = (await self.db.execute(total_stmt)).scalar_one()
+        else:
+            count_query = select(func.count()).select_from(
+                query.with_only_columns(Listing.id).order_by(None).subquery()
+            )
+            total = (await self.db.execute(count_query)).scalar_one()
 
+        items: List[ListingListItemResponse] = []
+        for listing, rev, seller, sr, primary_img in rows:
             is_sr = listing.showroom_id is not None or (sr is not None)
             sr_name = sr.name if sr else None
             sr_verified = sr.is_verified if sr else False
@@ -284,15 +385,17 @@ class ListingService:
         return items, total
 
     async def get_listing_detail(self, listing_id: uuid.UUID, current_user: Optional[User] = None) -> ListingDetailResponse:
+        load_options = [
+            selectinload(Listing.seller).selectinload(User.showrooms),
+            selectinload(Listing.published_revision).selectinload(ListingRevision.media),
+            selectinload(Listing.published_revision).selectinload(ListingRevision.brand),
+            selectinload(Listing.revisions).selectinload(ListingRevision.media),
+            selectinload(Listing.revisions).selectinload(ListingRevision.brand),
+        ]
+
         stmt = (
             select(Listing)
-            .options(
-                selectinload(Listing.seller).selectinload(User.showrooms),
-                selectinload(Listing.published_revision).selectinload(ListingRevision.media),
-                selectinload(Listing.published_revision).selectinload(ListingRevision.brand),
-                selectinload(Listing.revisions).selectinload(ListingRevision.media),
-                selectinload(Listing.revisions).selectinload(ListingRevision.brand),
-            )
+            .options(*load_options)
             .where(Listing.id == listing_id)
         )
         res = await self.db.execute(stmt)
@@ -718,19 +821,40 @@ class ListingService:
                 self.db.add(media_item)
 
         prev_status = listing.status
-        # Nếu tin trước đó là DRAFT hoặc REJECTED, chuyển sang PENDING_REVIEW
-        if listing.status in ("DRAFT", "REJECTED"):
-            listing.status = "PENDING_REVIEW"
-        # LƯU Ý QUAN TRỌNG: Nếu listing.status == 'PUBLISHED', giữ nguyên PUBLISHED
-        # và giữ nguyên published_revision_id để tin công khai ngoài sàn vẫn hiển thị dữ liệu cũ trong lúc chờ duyệt!
+        now_utc = datetime.now(timezone.utc)
+        is_internal_staff = user.role in ("ADMIN", "INSPECTOR", "SUPPORT")
 
-        event = ListingStatusEvent(
-            listing_id=listing.id,
-            actor_user_id=user.id,
-            from_status=prev_status,
-            to_status=listing.status,
-            reason=f"Người bán gửi bản chỉnh sửa tin đăng (Phiên bản #{target_rev.revision_no}) chờ phê duyệt",
-        )
+        if is_internal_staff:
+            target_rev.review_status = "APPROVED"
+            target_rev.reviewed_at = now_utc
+            target_rev.reviewed_by_user_id = user.id
+            target_rev.rejection_reason = None
+
+            listing.published_revision_id = target_rev.id
+            listing.status = "PUBLISHED"
+            listing.published_at = listing.published_at or now_utc
+
+            event = ListingStatusEvent(
+                listing_id=listing.id,
+                actor_user_id=user.id,
+                from_status=prev_status,
+                to_status="PUBLISHED",
+                reason=f"Quản trị viên cập nhật tin xe (Phiên bản #{target_rev.revision_no}) - Tự động duyệt và xuất bản trực tiếp",
+            )
+        else:
+            # Nếu tin trước đó là DRAFT hoặc REJECTED, chuyển sang PENDING_REVIEW
+            if listing.status in ("DRAFT", "REJECTED"):
+                listing.status = "PENDING_REVIEW"
+            # LƯU Ý QUAN TRỌNG: Nếu listing.status == 'PUBLISHED', giữ nguyên PUBLISHED
+            # và giữ nguyên published_revision_id để tin công khai ngoài sàn vẫn hiển thị dữ liệu cũ trong lúc chờ duyệt!
+
+            event = ListingStatusEvent(
+                listing_id=listing.id,
+                actor_user_id=user.id,
+                from_status=prev_status,
+                to_status=listing.status,
+                reason=f"Người bán gửi bản chỉnh sửa tin đăng (Phiên bản #{target_rev.revision_no}) chờ phê duyệt",
+            )
         self.db.add(event)
         await self.db.commit()
         await self.db.refresh(listing)

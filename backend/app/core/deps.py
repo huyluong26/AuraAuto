@@ -61,16 +61,19 @@ async def get_current_active_user(
     return current_user
 
 
+INTERNAL_STAFF_ROLES = ("ADMIN", "INSPECTOR", "SUPPORT")
+
+
 async def get_current_verified_user(
     current_user: User = Depends(get_current_active_user),
 ) -> User:
-    """Ensure user has verified their email address before performing protected actions."""
+    """Ensure user has verified their email address before performing protected actions.
+    Internal staff and administrators are automatically exempt."""
+    if current_user.role in INTERNAL_STAFF_ROLES:
+        return current_user
     if not current_user.email_verified_at:
         raise ForbiddenException("Vui lòng xác thực địa chỉ email trước khi thực hiện thao tác này.")
     return current_user
-
-
-INTERNAL_STAFF_ROLES = ("ADMIN", "INSPECTOR", "SUPPORT")
 
 
 async def require_admin(

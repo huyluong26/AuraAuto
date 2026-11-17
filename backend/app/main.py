@@ -155,8 +155,11 @@ app = FastAPI(
 )
 
 # Security Middlewares
+from starlette.middleware.gzip import GZipMiddleware
 from app.core.middleware import SecurityHeadersMiddleware, AuthSecurityMiddleware
 
+# Response Gzip Compression for high speed over mobile networks
+app.add_middleware(GZipMiddleware, minimum_size=1000)
 app.add_middleware(SecurityHeadersMiddleware)
 app.add_middleware(AuthSecurityMiddleware)
 

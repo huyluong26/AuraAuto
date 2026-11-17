@@ -7,6 +7,7 @@ from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
+from app.core.cache import fast_cache
 from app.models.catalog import VehicleBrand, VehicleModel, VehicleVariant
 from app.modules.catalog.schemas import BrandResponse, ModelResponse, VariantResponse
 
@@ -76,26 +77,47 @@ async def resolve_or_create_brand_model(
 
 @router.get("/brands", response_model=List[BrandResponse])
 async def list_brands(db: AsyncSession = Depends(get_db)):
+    cache_key = "catalog:brands"
+    cached = await fast_cache.get(cache_key)
+    if cached is not None:
+        return cached
+
     stmt = select(VehicleBrand).where(VehicleBrand.is_active == True).order_by(VehicleBrand.name.asc())
     result = await db.execute(stmt)
-    return result.scalars().all()
+    brands = result.scalars().all()
+    await fast_cache.set(cache_key, brands, ttl_seconds=3600)
+    return brands
 
 
 @router.get("/brands/{brand_id}/models", response_model=List[ModelResponse])
 async def list_models_by_brand(brand_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
+    cache_key = f"catalog:models:{brand_id}"
+    cached = await fast_cache.get(cache_key)
+    if cached is not None:
+        return cached
+
     stmt = select(VehicleModel).where(
         VehicleModel.brand_id == brand_id,
         VehicleModel.is_active == True,
     ).order_by(VehicleModel.name.asc())
     result = await db.execute(stmt)
-    return result.scalars().all()
+    models = result.scalars().all()
+    await fast_cache.set(cache_key, models, ttl_seconds=3600)
+    return models
 
 
 @router.get("/models/{model_id}/variants", response_model=List[VariantResponse])
 async def list_variants_by_model(model_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
+    cache_key = f"catalog:variants:{model_id}"
+    cached = await fast_cache.get(cache_key)
+    if cached is not None:
+        return cached
+
     stmt = select(VehicleVariant).where(
         VehicleVariant.model_id == model_id,
         VehicleVariant.is_active == True,
     ).order_by(VehicleVariant.name.asc())
     result = await db.execute(stmt)
-    return result.scalars().all()
+    variants = result.scalars().all()
+    await fast_cache.set(cache_key, variants, ttl_seconds=3600)
+    return variants

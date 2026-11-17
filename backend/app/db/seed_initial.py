@@ -1,4 +1,5 @@
 import logging
+from datetime import datetime, timezone
 from sqlalchemy import select
 
 from app.core.config import settings
@@ -16,9 +17,11 @@ async def seed_initial_data() -> None:
         # 1. Admin Seed
         admin_stmt = select(User).where(User.email == settings.INITIAL_ADMIN_EMAIL.lower())
         admin_res = await session.execute(admin_stmt)
-        if not admin_res.scalar_one_or_none():
+        existing_admin = admin_res.scalar_one_or_none()
+        if not existing_admin:
             admin = User(
                 email=settings.INITIAL_ADMIN_EMAIL.lower(),
+                email_verified_at=datetime.now(timezone.utc),
                 password_hash=get_password_hash(settings.INITIAL_ADMIN_PASSWORD),
                 display_name="Hệ Thống Quản Trị",
                 role="ADMIN",
@@ -26,7 +29,11 @@ async def seed_initial_data() -> None:
                 phone="0900000000",
             )
             session.add(admin)
+            await session.commit()
             logger.info(f"Seeded initial admin: {settings.INITIAL_ADMIN_EMAIL}")
+        elif not existing_admin.email_verified_at:
+            existing_admin.email_verified_at = datetime.now(timezone.utc)
+            await session.commit()
 
         # 2. Car Brands & Models Seed
         brand_stmt = select(VehicleBrand).limit(1)
