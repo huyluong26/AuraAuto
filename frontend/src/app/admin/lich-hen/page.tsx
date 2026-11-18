@@ -335,10 +335,10 @@ export default function AdminAppointmentsPage() {
           emptyIcon="calendar_month"
           rowActionsHeader="Thao tác"
           rowActions={(item) => (
-            <div className="flex items-center justify-end gap-1.5">
+            <div className="flex items-center justify-end gap-1">
               <AdminButton
-                size="sm"
-                variant="ghost"
+                size="xs"
+                variant="outline"
                 icon="visibility"
                 onClick={() => setSelectedAppointment(item)}
                 title="Xem chi tiết lịch hẹn"
@@ -348,7 +348,7 @@ export default function AdminAppointmentsPage() {
 
               {(item.status === 'PENDING' || item.status === 'CONFIRMED') && (
                 <AdminButton
-                  size="sm"
+                  size="xs"
                   variant="danger"
                   icon="cancel"
                   onClick={() => handleAdminCancel(item)}

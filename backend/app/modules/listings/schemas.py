@@ -278,6 +278,10 @@ class ListingDetailResponse(BaseModel):
     revision_id: uuid.UUID
     brand_id: Optional[uuid.UUID] = None
     brand_name: Optional[str] = None
+    model_id: Optional[uuid.UUID] = None
+    model_name: Optional[str] = None
+    variant_id: Optional[uuid.UUID] = None
+    variant_name: Optional[str] = None
     title: str
     price_vnd: int
     manufacture_year: int
@@ -325,6 +329,7 @@ class ListingDetailResponse(BaseModel):
 
 class ListingFilterParams(BaseModel):
     brand_id: Optional[uuid.UUID] = None
+    brand: Optional[str] = None
     model_id: Optional[uuid.UUID] = None
     min_price_vnd: Optional[int] = None
     max_price_vnd: Optional[int] = None

@@ -24,36 +24,36 @@ export function AdminBadge({
       case 'PUBLISHED':
         return {
           label: 'Đang hiển thị',
-          bg: 'bg-emerald-50 text-emerald-700 border-emerald-200/80',
-          dot: 'bg-emerald-500',
+          bg: 'bg-emerald-50 text-emerald-800 border-emerald-200/90',
+          dot: 'bg-emerald-600',
           pulse: false,
         };
       case 'PENDING_REVIEW':
         return {
           label: 'Chờ duyệt',
-          bg: 'bg-secondary-container/50 text-secondary border-secondary/30',
-          dot: 'bg-secondary',
+          bg: 'bg-amber-50 text-amber-900 border-amber-200/90',
+          dot: 'bg-amber-600',
           pulse: true,
         };
       case 'REJECTED':
         return {
           label: 'Bị từ chối',
-          bg: 'bg-red-50 text-red-700 border-red-200/80',
-          dot: 'bg-red-500',
+          bg: 'bg-rose-50 text-rose-800 border-rose-200/90',
+          dot: 'bg-rose-600',
           pulse: false,
         };
       case 'DRAFT':
         return {
           label: 'Bản nháp',
-          bg: 'bg-surface-container-high/60 text-outline border-surface-container-highest',
-          dot: 'bg-outline',
+          bg: 'bg-neutral-50 text-neutral-600 border-dashed border-neutral-300',
+          dot: 'bg-neutral-400',
           pulse: false,
         };
       case 'SOLD':
         return {
           label: 'Đã giao dịch',
-          bg: 'bg-indigo-50 text-indigo-700 border-indigo-200/80',
-          dot: 'bg-indigo-500',
+          bg: 'bg-neutral-100 text-neutral-700 border-neutral-200',
+          dot: 'bg-neutral-400',
           pulse: false,
         };
       case 'HIDDEN':
@@ -69,14 +69,14 @@ export function AdminBadge({
       case 'ADMIN':
         return {
           label: 'Quản trị viên',
-          bg: 'bg-red-50 text-red-800 border-red-300 font-bold',
-          dot: 'bg-red-600',
+          bg: 'bg-[#1c1a17] text-[#e5c78a] border border-[#8c6d3b]/50 font-bold',
+          dot: 'bg-[#e5c78a]',
           pulse: false,
         };
       case 'INSPECTOR':
         return {
-          label: 'Kiểm duyệt viên',
-          bg: 'bg-amber-50 text-amber-900 border-amber-300 font-bold',
+          label: 'Kiểm định viên',
+          bg: 'bg-amber-50 text-amber-900 border border-amber-300 font-bold',
           dot: 'bg-amber-600',
           pulse: false,
         };
@@ -182,7 +182,7 @@ export function AdminBadge({
 
   return (
     <span
-      className={`inline-flex items-center rounded-lg border font-semibold uppercase tracking-wider select-none shrink-0 ${config.bg} ${sizeClasses} ${className}`}
+      className={`inline-flex items-center rounded-lg border font-semibold uppercase tracking-wider select-none shrink-0 whitespace-nowrap ${config.bg} ${sizeClasses} ${className}`}
     >
       {showDot && (
         <span className="relative flex h-1.5 w-1.5">

@@ -1,3 +1,4 @@
+import os
 import json
 from pathlib import Path
 from typing import List, Union
@@ -20,6 +21,14 @@ class Settings(BaseSettings):
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24  # 1 day
     REFRESH_TOKEN_EXPIRE_DAYS: int = 30
+
+    @field_validator("SECRET_KEY")
+    @classmethod
+    def validate_secret_key(cls, v: str) -> str:
+        env = os.getenv("ENVIRONMENT", "development").lower()
+        if env in ("production", "prod") and ("insecure" in v.lower() or v == "default-insecure-secret-key-please-change-in-production"):
+            raise ValueError("SECRET_KEY must be set to a secure unique secret in production.")
+        return v
 
     # CORS
     BACKEND_CORS_ORIGINS: List[str] = [

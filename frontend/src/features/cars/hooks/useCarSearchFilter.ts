@@ -12,11 +12,19 @@ export interface SearchFilterState {
 
 const BRAND_NAME_MAP: Record<string, string> = {
   porsche: 'Porsche',
-  mercedes: 'Mercedes Benz',
+  mercedes: 'Mercedes-Benz',
   bmw: 'BMW',
-  landrover: 'Range Rover',
+  toyota: 'Toyota',
+  mitsubishi: 'Mitsubishi',
+  mazda: 'Mazda',
+  hyundai: 'Hyundai',
+  kia: 'Kia',
+  ford: 'Ford',
+  vinfast: 'VinFast',
   audi: 'Audi',
   lexus: 'Lexus',
+  honda: 'Honda',
+  landrover: 'Range Rover',
   bentley: 'Bentley',
 };
 

@@ -206,6 +206,78 @@ export function ValuationResultModal({
             </div>
           </div>
 
+          {/* 3.5 Bóc tách thẩm định theo tình trạng xe thực tế */}
+          {result.breakdown_items && result.breakdown_items.length > 0 && (
+            <div className="p-5 rounded-2xl bg-white border border-[#eae8e3] shadow-xs space-y-3.5">
+              <div className="flex flex-wrap items-center justify-between gap-2 pb-2.5 border-b border-[#eae8e3]">
+                <div className="flex items-center gap-2">
+                  <ShieldCheck className="w-4 h-4 text-[#b89b72]" />
+                  <span className="font-bold text-sm text-[#1a1c1a]">
+                    Bóc Tách Thẩm Định Theo Tình Trạng Kỹ Thuật
+                  </span>
+                </div>
+                {result.base_price_vnd && (
+                  <span className="text-xs text-[#666]">
+                    Giá xe nguyên bản chuẩn thị trường:{' '}
+                    <strong className="text-[#1a1c1a] font-mono">
+                      {formatVND(result.base_price_vnd)}
+                    </strong>
+                  </span>
+                )}
+              </div>
+
+              <div className="divide-y divide-[#f0eee9] text-xs">
+                {result.breakdown_items.map((item, idx) => (
+                  <div key={idx} className="py-2.5 flex items-start justify-between gap-3">
+                    <div className="space-y-0.5">
+                      <div className="font-semibold text-[#1a1c1a] flex items-center gap-1.5">
+                        {item.impact === 'GIẢM' && (
+                          <span className="inline-block w-2 h-2 rounded-full bg-red-500 shrink-0" />
+                        )}
+                        {item.impact === 'TĂNG' && (
+                          <span className="inline-block w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
+                        )}
+                        {item.impact === 'NGUYÊN BẢN' && (
+                          <span className="inline-block w-2 h-2 rounded-full bg-blue-400 shrink-0" />
+                        )}
+                        <span>{item.label}</span>
+                      </div>
+                      <p className="text-[11px] text-[#777] leading-relaxed pl-3.5">{item.note}</p>
+                    </div>
+
+                    <div className="text-right shrink-0">
+                      {item.impact === 'GIẢM' ? (
+                        <span className="px-2.5 py-1 rounded-lg bg-red-50 text-red-700 font-bold font-mono text-xs border border-red-200 inline-block">
+                          {item.amount_vnd !== 0 ? formatVND(item.amount_vnd) : `${item.percentage}%`}
+                        </span>
+                      ) : item.impact === 'TĂNG' ? (
+                        <span className="px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-700 font-bold font-mono text-xs border border-emerald-200 inline-block">
+                          +{item.amount_vnd !== 0 ? formatVND(item.amount_vnd) : `+${item.percentage}%`}
+                        </span>
+                      ) : (
+                        <span className="px-2.5 py-1 rounded-lg bg-slate-50 text-slate-600 font-medium font-mono text-xs border border-slate-200 inline-block">
+                          0 ₫ (Chuẩn zin)
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {result.total_condition_adjustment_vnd !== undefined && result.total_condition_adjustment_vnd !== 0 && (
+                <div className="pt-2.5 border-t border-[#eae8e3] flex items-center justify-between text-xs font-semibold">
+                  <span className="text-[#666]">Tổng điều chỉnh theo tình trạng xe:</span>
+                  <span className={`font-mono font-bold text-sm ${
+                    result.total_condition_adjustment_vnd < 0 ? 'text-red-600' : 'text-emerald-600'
+                  }`}>
+                    {result.total_condition_adjustment_vnd > 0 ? '+' : ''}
+                    {formatVND(result.total_condition_adjustment_vnd)}
+                  </span>
+                </div>
+              )}
+            </div>
+          )}
+
           {/* 4. Four Usage & Market Indicators */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             <div className="p-3.5 rounded-2xl bg-white border border-[#eae8e3] space-y-1">

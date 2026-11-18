@@ -334,7 +334,7 @@ export default function AdminReportsPage() {
                       {report.status === 'PENDING' ? (
                         <AdminButton
                           variant="danger"
-                          size="sm"
+                          size="xs"
                           icon="gavel"
                           onClick={() => handleOpenResolveModal(report)}
                         >

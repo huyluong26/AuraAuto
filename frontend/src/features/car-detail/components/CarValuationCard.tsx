@@ -52,9 +52,9 @@ export function CarValuationCard({
             <button
               type="button"
               onClick={onRequestValuation}
-              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-primary text-on-primary hover:bg-primary-container text-xs sm:text-sm font-semibold shadow-xs transition-all cursor-pointer group"
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-[#0f172a] hover:bg-black text-[#faf9f6] border border-neutral-800 text-xs sm:text-sm font-medium shadow-xs transition-all cursor-pointer group active:scale-[0.99]"
             >
-              <span className="material-symbols-outlined text-[18px] text-secondary-fixed group-hover:rotate-12 transition-transform">
+              <span className="material-symbols-outlined text-[17px] text-[#e5c78a] group-hover:rotate-12 transition-transform">
                 auto_awesome
               </span>
               <span>Chạy Thẩm Định AI</span>
@@ -236,34 +236,178 @@ export function CarValuationCard({
 
       {/* AI Explanation & Market Advice if available */}
       {explanation && (
-        <div className="p-3 rounded-lg bg-surface-container-low border border-surface-container flex flex-col gap-1.5 mt-2.5">
-          <div className="flex items-center gap-1.5 text-primary text-xs font-bold">
-            <span className="material-symbols-outlined text-[16px] text-secondary">insights</span>
-            <span>Nhận định Chuyên gia AuraML™</span>
+        <div className="p-4 rounded-xl bg-surface-container-low border border-surface-container flex flex-col gap-3 mt-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2 text-primary text-xs sm:text-sm font-bold">
+              <span className="material-symbols-outlined text-[18px] text-secondary">insights</span>
+              <span>Nhận định Chuyên gia Gemini AI &amp; AuraML™</span>
+            </div>
+            {valuation?.pricing_method === 'ML_GEMINI_GROUNDED' && (
+              <span className="px-2 py-0.5 rounded-full bg-secondary-fixed text-on-secondary-fixed text-[10px] font-bold uppercase flex items-center gap-1">
+                <span className="material-symbols-outlined text-[12px]">verified</span>
+                Gemini Market Grounded
+              </span>
+            )}
           </div>
+
+          {/* Tóm tắt nhận định tổng quan */}
           {explanation.summary && (
             <p className="text-xs text-on-surface leading-relaxed">
               {explanation.summary}
             </p>
           )}
+
+          {/* Điểm cộng chiếc xe này */}
           {explanation.positive_factors && explanation.positive_factors.length > 0 && (
-            <div className="flex flex-wrap gap-1.5 pt-0.5">
-              {explanation.positive_factors.map((factor, fIdx) => (
-                <span
-                  key={fIdx}
-                  className="px-2 py-0.5 rounded bg-surface-container text-secondary text-[10px] font-medium flex items-center gap-1"
-                >
-                  <span className="material-symbols-outlined text-[12px]">check</span>
-                  {factor}
-                </span>
-              ))}
+            <div className="space-y-1.5 pt-1 border-t border-surface-container/60">
+              <span className="text-[11px] font-bold text-secondary uppercase flex items-center gap-1">
+                <span className="material-symbols-outlined text-[14px]">check_circle</span>
+                Ưu điểm &amp; Điểm cộng giữ giá của xe:
+              </span>
+              <div className="flex flex-wrap gap-1.5">
+                {explanation.positive_factors.map((factor, fIdx) => (
+                  <span
+                    key={fIdx}
+                    className="px-2.5 py-1 rounded-lg bg-surface-container text-on-surface text-[11px] font-medium flex items-center gap-1.5 border border-surface-container-high"
+                  >
+                    <span className="material-symbols-outlined text-secondary text-[14px]">check</span>
+                    <span>{factor}</span>
+                  </span>
+                ))}
+              </div>
             </div>
           )}
-          {explanation.market_advice && (
-            <p className="text-[11px] text-on-surface-variant italic pt-0.5 border-t border-surface-container">
-              Khuyến nghị: {explanation.market_advice}
-            </p>
+
+          {/* Điểm cần lưu ý cho người mua */}
+          {explanation.negative_factors && explanation.negative_factors.length > 0 && (
+            <div className="space-y-1.5 pt-1 border-t border-surface-container/60">
+              <span className="text-[11px] font-bold text-amber-700 dark:text-amber-400 uppercase flex items-center gap-1">
+                <span className="material-symbols-outlined text-[14px]">info</span>
+                Điểm lưu ý khi kiểm tra xe:
+              </span>
+              <div className="flex flex-wrap gap-1.5">
+                {explanation.negative_factors.map((factor, fIdx) => (
+                  <span
+                    key={fIdx}
+                    className="px-2.5 py-1 rounded-lg bg-amber-50 dark:bg-amber-950/30 text-amber-900 dark:text-amber-200 text-[11px] font-medium flex items-center gap-1.5 border border-amber-200/50"
+                  >
+                    <span className="material-symbols-outlined text-amber-600 text-[14px]">priority_high</span>
+                    <span>{factor}</span>
+                  </span>
+                ))}
+              </div>
+            </div>
           )}
+
+          {/* Lời khuyên thương lượng thị trường */}
+          {explanation.market_advice && (
+            <div className="p-2.5 rounded-lg bg-surface-container border border-surface-container-high flex items-start gap-2 text-xs text-on-surface-variant">
+              <span className="material-symbols-outlined text-secondary text-[16px] shrink-0 mt-0.5">tips_and_updates</span>
+              <div>
+                <strong className="text-primary font-semibold">Khuyến nghị giao dịch: </strong>
+                <span>{explanation.market_advice}</span>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Bóc tách thẩm định theo tình trạng xe thực tế (Automotive Appraisal Breakdown) */}
+      {valuation?.breakdown_items && valuation.breakdown_items.length > 0 && (
+        <div className="p-4 rounded-xl bg-surface-container-low border border-surface-container flex flex-col gap-3 mt-3">
+          <div className="flex flex-wrap items-center justify-between gap-2 pb-2 border-b border-surface-container-high">
+            <div className="flex items-center gap-2">
+              <span className="material-symbols-outlined text-[18px] text-secondary">verified_user</span>
+              <span className="text-xs sm:text-sm font-bold text-primary">
+                Bóc Tách Thẩm Định Theo Hồ Sơ Kỹ Thuật Xe
+              </span>
+            </div>
+            {valuation.base_price_vnd && (
+              <span className="text-[11px] text-on-surface-variant">
+                Giá chuẩn xe nguyên bản:{' '}
+                <strong className="text-primary font-mono">{formatVND(valuation.base_price_vnd)}</strong>
+              </span>
+            )}
+          </div>
+
+          <div className="divide-y divide-surface-container text-xs">
+            {valuation.breakdown_items.map((item, idx) => (
+              <div key={idx} className="py-2.5 flex items-start justify-between gap-3">
+                <div className="space-y-0.5">
+                  <div className="font-semibold text-primary flex items-center gap-1.5">
+                    {item.impact === 'GIẢM' && (
+                      <span className="inline-block w-2 h-2 rounded-full bg-red-500 shrink-0" />
+                    )}
+                    {item.impact === 'TĂNG' && (
+                      <span className="inline-block w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
+                    )}
+                    {item.impact === 'NGUYÊN BẢN' && (
+                      <span className="inline-block w-2 h-2 rounded-full bg-blue-500 shrink-0" />
+                    )}
+                    <span>{item.label}</span>
+                  </div>
+                  <p className="text-[11px] text-on-surface-variant pl-3.5 leading-relaxed">{item.note}</p>
+                </div>
+
+                <div className="text-right shrink-0">
+                  {item.impact === 'GIẢM' ? (
+                    <span className="px-2.5 py-0.5 rounded bg-red-50 dark:bg-red-950/30 text-red-700 dark:text-red-300 font-bold font-mono text-[11px] border border-red-200/60 inline-block">
+                      {item.amount_vnd !== 0 ? formatVND(item.amount_vnd) : `${item.percentage}%`}
+                    </span>
+                  ) : item.impact === 'TĂNG' ? (
+                    <span className="px-2.5 py-0.5 rounded bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-300 font-bold font-mono text-[11px] border border-emerald-200/60 inline-block">
+                      +{item.amount_vnd !== 0 ? formatVND(item.amount_vnd) : `+${item.percentage}%`}
+                    </span>
+                  ) : (
+                    <span className="px-2.5 py-0.5 rounded bg-surface-container text-outline font-medium font-mono text-[11px] border border-surface-container-high inline-block">
+                      0 ₫ (Chuẩn zin)
+                    </span>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {valuation.total_condition_adjustment_vnd !== undefined && valuation.total_condition_adjustment_vnd !== 0 && (
+            <div className="pt-2 border-t border-surface-container flex items-center justify-between text-xs font-semibold">
+              <span className="text-on-surface-variant">Tổng điều chỉnh theo tình trạng xe:</span>
+              <span
+                className={`font-mono font-bold text-sm ${
+                  valuation.total_condition_adjustment_vnd < 0 ? 'text-red-600' : 'text-emerald-600'
+                }`}
+              >
+                {valuation.total_condition_adjustment_vnd > 0 ? '+' : ''}
+                {formatVND(valuation.total_condition_adjustment_vnd)}
+              </span>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Nguồn dữ liệu tin thị trường đối chiếu qua Gemini (nếu có) */}
+      {valuation?.market_sources && valuation.market_sources.length > 0 && (
+        <div className="p-3.5 rounded-xl bg-surface-container-low border border-surface-container flex flex-col gap-2 mt-3">
+          <div className="flex items-center gap-1.5 text-xs font-bold text-primary">
+            <span className="material-symbols-outlined text-[16px] text-secondary">travel_explore</span>
+            <span>Nguồn Dữ Liệu Thị Trường Thực Tế (Gemini Grounded):</span>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-0.5">
+            {valuation.market_sources.slice(0, 4).map((source, sIdx) => (
+              <div
+                key={sIdx}
+                className="p-2 rounded-lg bg-surface border border-surface-container-high flex flex-col gap-0.5 text-[11px]"
+              >
+                <div className="flex items-center justify-between gap-1">
+                  <span className="font-semibold text-primary truncate max-w-[170px]">{source.title}</span>
+                  <span className="font-mono font-bold text-secondary">{formatVND(source.price_vnd)}</span>
+                </div>
+                <div className="flex items-center justify-between text-[10px] text-outline">
+                  <span>{source.platform || 'Thị trường'}</span>
+                  <span>{source.location || 'Việt Nam'}</span>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       )}
     </div>

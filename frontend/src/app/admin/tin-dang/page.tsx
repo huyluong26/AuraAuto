@@ -56,15 +56,14 @@ function AdminListingsContent() {
     ];
   }, []);
 
-  // Define Table Columns (Open for Extension)
+  // Define Table Columns (Responsive, fits gracefully without horizontal clipping)
   const columns: TableColumn<AdminListingItem>[] = [
     {
       key: 'vehicle',
       header: 'Thông tin phương tiện',
-      width: '35%',
       render: (item) => (
-        <div className="flex items-center gap-3">
-          <div className="w-14 h-14 rounded-xl overflow-hidden bg-surface-container-high border border-surface-container-high shrink-0 relative">
+        <div className="flex items-center gap-3 min-w-[240px]">
+          <div className="w-14 h-12 rounded-lg overflow-hidden bg-neutral-100 border border-[#e8e6e1] shrink-0 relative">
             {item.primary_image_url ? (
               <img
                 src={item.primary_image_url}
@@ -72,7 +71,7 @@ function AdminListingsContent() {
                 className="w-full h-full object-cover"
               />
             ) : (
-              <div className="w-full h-full flex items-center justify-center text-outline">
+              <div className="w-full h-full flex items-center justify-center text-neutral-400">
                 <span className="material-symbols-outlined text-[20px]">directions_car</span>
               </div>
             )}
@@ -84,20 +83,20 @@ function AdminListingsContent() {
           </div>
 
           <div className="min-w-0 flex-1">
-            <div className="font-semibold text-primary text-sm truncate leading-snug hover:text-secondary transition-colors">
+            <div className="font-semibold text-[#111827] text-xs sm:text-sm truncate leading-snug hover:text-[#8c6d3b] transition-colors" title={item.title}>
               {item.title}
             </div>
-            <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-outline mt-0.5">
-              <span>Năm {item.manufacture_year}</span>
+            <div className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-[11px] text-[#6b7280] mt-0.5">
+              <span>{item.manufacture_year}</span>
               <span>•</span>
-              <span>{item.body_type}</span>
+              <span>{item.body_type || 'Sedan'}</span>
               <span>•</span>
-              <span>{item.fuel_type}</span>
+              <span>{item.fuel_type || 'Xăng'}</span>
               <span>•</span>
-              <span>{item.transmission}</span>
+              <span>{item.transmission || 'Tự động'}</span>
             </div>
-            <div className="text-[10px] text-outline/80 font-mono mt-0.5">
-              ID: {item.id.slice(0, 8)}...
+            <div className="text-[10px] text-[#9ca3af] font-mono mt-0.5">
+              ID: #{item.id.slice(0, 8)}
             </div>
           </div>
         </div>
@@ -105,15 +104,15 @@ function AdminListingsContent() {
     },
     {
       key: 'price',
-      header: 'Giá & Odometer',
-      width: '18%',
+      header: 'Giá & ODO',
+      width: '135px',
       render: (item) => (
-        <div>
-          <div className="font-bold text-secondary text-sm">
+        <div className="whitespace-nowrap">
+          <div className="font-bold text-[#111827] text-xs sm:text-sm font-headline">
             {formatVND(item.price_vnd)}
           </div>
-          <div className="text-xs text-outline mt-0.5 flex items-center gap-1">
-            <span className="material-symbols-outlined text-[14px]">speed</span>
+          <div className="text-[11px] text-[#6b7280] mt-0.5 flex items-center gap-1">
+            <span className="material-symbols-outlined text-[13px] text-[#9ca3af]">speed</span>
             <span>{formatKm(item.odometer_km)}</span>
           </div>
         </div>
@@ -121,18 +120,18 @@ function AdminListingsContent() {
     },
     {
       key: 'seller',
-      header: 'Người bán & Địa điểm',
-      width: '20%',
+      header: 'Người bán & Nơi bán',
+      width: '170px',
       render: (item) => (
-        <div>
-          <div className="font-medium text-primary text-xs flex items-center gap-1.5">
-            <span className="material-symbols-outlined text-[15px] text-outline">person</span>
-            <span className="truncate">{item.seller_name}</span>
+        <div className="whitespace-nowrap">
+          <div className="font-medium text-[#111827] text-xs flex items-center gap-1.5">
+            <span className="material-symbols-outlined text-[14px] text-[#9ca3af]">person</span>
+            <span className="truncate max-w-[130px]">{item.seller_name}</span>
           </div>
-          <div className="text-[11px] text-outline mt-0.5 flex items-center gap-1">
-            <span className="material-symbols-outlined text-[14px]">location_on</span>
-            <span>{item.province_code}</span>
-            {item.seller_phone && <span>• {item.seller_phone}</span>}
+          <div className="text-[11px] text-[#6b7280] mt-0.5 flex items-center gap-1">
+            <span className="material-symbols-outlined text-[13px] text-[#9ca3af]">location_on</span>
+            <span>{item.province_code || 'Toàn quốc'}</span>
+            {item.seller_phone && <span className="text-[#9ca3af]">• {item.seller_phone}</span>}
           </div>
         </div>
       ),
@@ -140,13 +139,13 @@ function AdminListingsContent() {
     {
       key: 'status',
       header: 'Trạng thái',
-      width: '14%',
+      width: '140px',
       align: 'center',
       render: (item) => (
-        <div className="flex flex-col items-center gap-1">
+        <div className="flex flex-col items-center gap-1 whitespace-nowrap">
           <AdminBadge status={item.status} size="sm" />
           {item.has_pending_revision && (
-            <span className="px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-800 text-[10px] font-bold border border-amber-300">
+            <span className="px-1.5 py-0.2 rounded bg-amber-50 text-amber-800 text-[10px] font-semibold border border-amber-300">
               Có bản sửa chờ duyệt
             </span>
           )}
@@ -164,11 +163,11 @@ function AdminListingsContent() {
     {
       key: 'date',
       header: 'Thời gian',
-      width: '13%',
+      width: '105px',
       render: (item) => (
-        <div className="text-xs text-outline">
-          <div>{new Date(item.created_at).toLocaleDateString('vi-VN')}</div>
-          <div className="text-[10px] text-outline/80">
+        <div className="text-xs text-[#374151] whitespace-nowrap">
+          <div className="font-medium">{new Date(item.created_at).toLocaleDateString('vi-VN')}</div>
+          <div className="text-[10px] text-[#9ca3af]">
             {new Date(item.created_at).toLocaleTimeString('vi-VN', {
               hour: '2-digit',
               minute: '2-digit',
@@ -270,34 +269,36 @@ function AdminListingsContent() {
           emptyIcon="directions_car"
           onRowClick={(item) => setInspectListingId(item.id)}
           rowActions={(item) => (
-            <div className="flex items-center justify-end gap-1.5">
-              {/* Quick Approve button if not published OR has pending revision */}
+            <div className="flex items-center justify-end gap-1">
+              {/* Quick Approve button if pending review or has revision */}
               {(item.status !== 'PUBLISHED' || item.has_pending_revision) && item.status !== 'SOLD' && (
                 <button
                   type="button"
-                  title={item.has_pending_revision ? "Phê duyệt bản sửa đổi" : "Phê duyệt nhanh"}
+                  title={item.has_pending_revision ? "Phê duyệt bản sửa đổi" : "Phê duyệt bài đăng"}
                   onClick={(e) => {
                     e.stopPropagation();
                     handleQuickApprove(item.id, item.title);
                   }}
-                  className="p-1.5 rounded-lg text-emerald-600 hover:bg-emerald-50 border border-emerald-200 transition-colors cursor-pointer"
+                  className="inline-flex items-center gap-1 h-6 px-2 rounded-md text-[10.5px] font-semibold bg-emerald-600 hover:bg-emerald-700 text-white border border-emerald-700 active:scale-[0.98] transition-all cursor-pointer"
                 >
-                  <span className="material-symbols-outlined text-[17px]">check_circle</span>
+                  <span className="material-symbols-outlined text-[13px]">check_circle</span>
+                  <span>Duyệt</span>
                 </button>
               )}
 
-              {/* Quick Reject button if pending OR has pending revision */}
+              {/* Quick Reject button if pending or has revision */}
               {(item.status === 'PENDING_REVIEW' || item.has_pending_revision) && (
                 <button
                   type="button"
-                  title={item.has_pending_revision ? "Từ chối bản sửa đổi" : "Từ chối nhanh"}
+                  title={item.has_pending_revision ? "Từ chối bản sửa đổi" : "Từ chối bài đăng"}
                   onClick={(e) => {
                     e.stopPropagation();
                     handleQuickReject(item.id, item.title);
                   }}
-                  className="p-1.5 rounded-lg text-red-600 hover:bg-red-50 border border-red-200 transition-colors cursor-pointer"
+                  className="inline-flex items-center gap-1 h-6 px-2 rounded-md text-[10.5px] font-semibold bg-white hover:bg-rose-50 text-rose-700 border border-rose-200 hover:border-rose-300 active:scale-[0.98] transition-all cursor-pointer"
                 >
-                  <span className="material-symbols-outlined text-[17px]">cancel</span>
+                  <span className="material-symbols-outlined text-[13px]">cancel</span>
+                  <span>Từ chối</span>
                 </button>
               )}
 
@@ -310,9 +311,9 @@ function AdminListingsContent() {
                     e.stopPropagation();
                     handleQuickTakedown(item.id, item.title);
                   }}
-                  className="p-1.5 rounded-lg text-amber-600 hover:bg-amber-50 border border-amber-200 transition-colors cursor-pointer"
+                  className="w-6 h-6 rounded-md flex items-center justify-center bg-white hover:bg-amber-50 border border-[#d8d6d0] hover:border-amber-300 text-[#64748b] hover:text-amber-700 active:scale-[0.98] transition-all cursor-pointer"
                 >
-                  <span className="material-symbols-outlined text-[17px]">block</span>
+                  <span className="material-symbols-outlined text-[13px]">block</span>
                 </button>
               )}
 
@@ -324,9 +325,9 @@ function AdminListingsContent() {
                   e.stopPropagation();
                   setEditingItem(item);
                 }}
-                className="p-1.5 rounded-lg text-outline hover:text-primary hover:bg-surface-container-high transition-colors cursor-pointer"
+                className="w-6 h-6 rounded-md flex items-center justify-center bg-white hover:bg-slate-100 border border-[#d8d6d0] hover:border-slate-400 text-[#475569] hover:text-[#0f172a] active:scale-[0.98] transition-all cursor-pointer"
               >
-                <span className="material-symbols-outlined text-[17px]">edit</span>
+                <span className="material-symbols-outlined text-[13px]">edit</span>
               </button>
 
               {/* Inspection Drawer */}
@@ -337,9 +338,9 @@ function AdminListingsContent() {
                   e.stopPropagation();
                   setInspectListingId(item.id);
                 }}
-                className="p-1.5 rounded-lg text-secondary hover:bg-secondary-container/40 transition-colors cursor-pointer"
+                className="w-6 h-6 rounded-md flex items-center justify-center bg-white hover:bg-slate-100 border border-[#d8d6d0] hover:border-slate-400 text-[#475569] hover:text-[#0f172a] active:scale-[0.98] transition-all cursor-pointer"
               >
-                <span className="material-symbols-outlined text-[17px]">visibility</span>
+                <span className="material-symbols-outlined text-[13px]">visibility</span>
               </button>
 
               {/* Permanent Delete */}
@@ -350,9 +351,9 @@ function AdminListingsContent() {
                   e.stopPropagation();
                   handleDeleteListing(item.id, item.title);
                 }}
-                className="p-1.5 rounded-lg text-outline hover:text-red-600 hover:bg-red-50 transition-colors cursor-pointer"
+                className="w-6 h-6 rounded-md flex items-center justify-center bg-white hover:bg-rose-50 border border-rose-200 hover:border-rose-300 text-rose-600 hover:text-rose-700 active:scale-[0.98] transition-all cursor-pointer"
               >
-                <span className="material-symbols-outlined text-[17px]">delete_forever</span>
+                <span className="material-symbols-outlined text-[13px]">delete</span>
               </button>
             </div>
           )}

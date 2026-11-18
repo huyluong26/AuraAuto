@@ -100,6 +100,13 @@ async def chat_websocket_endpoint(
     try:
         payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
         user_id = uuid.UUID(payload.get("sub"))
+        async with AsyncSessionLocal() as session:
+            stmt = select(User).where(User.id == user_id)
+            res = await session.execute(stmt)
+            user = res.scalar_one_or_none()
+            if not user or user.status != "ACTIVE":
+                await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
+                return
     except Exception:
         await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
         return

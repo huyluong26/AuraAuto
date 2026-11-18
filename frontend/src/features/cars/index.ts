@@ -1,6 +1,10 @@
 export { default as CarCard } from './components/CarCard';
 export { default as NaturalSearchBar } from './components/NaturalSearchBar';
 export { default as PromoteListingModal } from './components/PromoteListingModal';
-export { useFavorites } from './hooks/useFavorites';
+export { CarCatalogSidebar } from './components/CarCatalogSidebar';
+export { CarCatalogToolbar } from './components/CarCatalogToolbar';
+export { CarCatalogGrid } from './components/CarCatalogGrid';
+export { useCarCatalog } from './hooks/useCarCatalog';
 export { useCarSearchFilter } from './hooks/useCarSearchFilter';
+export * from './constants/catalog';
 export * from './types';

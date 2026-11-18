@@ -38,14 +38,14 @@ logger = logging.getLogger(__name__)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Initialize DB schema if tables don't exist yet
-    async with async_engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
-    # Seed data
-    try:
-        await seed_initial_data()
-    except Exception as e:
-        logger.warning(f"Seed data skipped or already present: {e}")
+    # In development mode, initialize schema and seed initial data if needed
+    if settings.ENVIRONMENT.lower() == "development":
+        async with async_engine.begin() as conn:
+            await conn.run_sync(Base.metadata.create_all)
+        try:
+            await seed_initial_data()
+        except Exception as e:
+            logger.warning(f"Seed data skipped or already present: {e}")
     yield
 
 

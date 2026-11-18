@@ -241,6 +241,22 @@ class PaymentService:
 
         now = datetime.now(timezone.utc)
 
+        # Kiểm tra số tiền: vnp_Amount trả về (đã nhân 100) phải khớp chính xác với đơn hàng
+        received_amount = 0
+        try:
+            received_amount = int(clean_params.get("vnp_Amount", 0))
+        except (ValueError, TypeError):
+            pass
+
+        expected_amount = int(tx.amount_vnd * 100)
+        if received_amount != expected_amount:
+            tx.status = "FAILED"
+            await db.commit()
+            logger.warning(
+                f"[VNPay] Amount mismatch for order {order_code}: expected={expected_amount}, received={received_amount}"
+            )
+            return False, f"Số tiền thanh toán ({received_amount // 100} ₫) không khớp với đơn hàng ({tx.amount_vnd} ₫).", tx
+
         # Kiểm tra hợp lệ: Chữ ký đúng VÀ mã phản hồi 00 (Thành công)
         if is_valid and response_code == "00" and tx_status == "00":
             tx.status = "SUCCESS"

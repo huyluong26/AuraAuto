@@ -183,9 +183,9 @@ export const FeaturedListingsTab: React.FC<FeaturedListingsTabProps> = ({
               type="button"
               onClick={() => onOpenGrantModal(item)}
               title="Gia hạn thêm số ngày nổi bật"
-              className="p-1.5 rounded-lg border border-surface-container-high text-outline hover:text-amber-600 hover:bg-amber-50 transition-colors cursor-pointer flex items-center gap-1 text-xs"
+              className="h-6 px-2 rounded-md border border-[#d8d6d0] hover:border-amber-400 bg-white text-[#475569] hover:text-amber-700 hover:bg-amber-50 active:scale-[0.98] transition-all cursor-pointer flex items-center gap-1 text-[10.5px]"
             >
-              <span className="material-symbols-outlined text-[17px]">more_time</span>
+              <span className="material-symbols-outlined text-[13px] text-amber-600">more_time</span>
               <span className="hidden sm:inline font-semibold">Gia hạn</span>
             </button>
 
@@ -194,9 +194,9 @@ export const FeaturedListingsTab: React.FC<FeaturedListingsTabProps> = ({
                 type="button"
                 onClick={() => onRevokeFeatured(item)}
                 title="Gỡ nổi bật trước hạn"
-                className="p-1.5 rounded-lg border border-surface-container-high text-outline hover:text-red-600 hover:bg-red-50 transition-colors cursor-pointer flex items-center gap-1 text-xs"
+                className="h-6 px-2 rounded-md border border-rose-200 hover:border-rose-300 bg-white text-rose-700 hover:bg-rose-50 active:scale-[0.98] transition-all cursor-pointer flex items-center gap-1 text-[10.5px]"
               >
-                <span className="material-symbols-outlined text-[17px]">cancel</span>
+                <span className="material-symbols-outlined text-[13px] text-rose-600">cancel</span>
                 <span className="hidden sm:inline font-semibold">Gỡ VIP</span>
               </button>
             )}

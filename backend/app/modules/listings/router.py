@@ -58,6 +58,7 @@ async def create_draft_listing(
 @router.get("", response_model=PaginatedResponse[ListingListItemResponse])
 async def list_listings(
     brand_id: Optional[uuid.UUID] = None,
+    brand: Optional[str] = None,
     model_id: Optional[uuid.UUID] = None,
     min_price_vnd: Optional[int] = Query(None, ge=0),
     max_price_vnd: Optional[int] = Query(None, ge=0),
@@ -77,7 +78,7 @@ async def list_listings(
     # Cache cho các truy vấn phổ biến mặc định (homepage / trang khám phá xe)
     is_default_query = (
         not any([
-            brand_id, model_id, min_price_vnd, max_price_vnd, min_year, max_year,
+            brand_id, brand, model_id, min_price_vnd, max_price_vnd, min_year, max_year,
             max_km, body_type, fuel_type, transmission, province_code, search,
         ])
         and sort_by == "newest"
@@ -91,6 +92,7 @@ async def list_listings(
 
     params = ListingFilterParams(
         brand_id=brand_id,
+        brand=brand,
         model_id=model_id,
         min_price_vnd=min_price_vnd,
         max_price_vnd=max_price_vnd,

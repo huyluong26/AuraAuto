@@ -310,7 +310,7 @@ export default function AdminStaffPage() {
           rowActions={(u) => {
             const currentStatus = u.status || 'ACTIVE';
             return (
-              <div className="flex items-center justify-end gap-1.5">
+              <div className="flex items-center justify-end gap-1">
                 {/* Edit Staff Role & Info */}
                 <button
                   type="button"
@@ -319,9 +319,9 @@ export default function AdminStaffPage() {
                     setModalOpen(true);
                   }}
                   title="Sửa quyền hạn & thông tin nhân sự"
-                  className="p-1.5 rounded-lg border border-surface-container-high text-outline hover:text-primary hover:bg-surface-container-high transition-colors cursor-pointer"
+                  className="w-6 h-6 rounded-md flex items-center justify-center bg-white hover:bg-slate-100 border border-[#d8d6d0] hover:border-slate-400 text-[#475569] hover:text-[#0f172a] active:scale-[0.98] transition-all cursor-pointer"
                 >
-                  <span className="material-symbols-outlined text-[17px]">edit</span>
+                  <span className="material-symbols-outlined text-[13px]">edit</span>
                 </button>
 
                 {/* Lock / Suspend Staff */}
@@ -329,13 +329,13 @@ export default function AdminStaffPage() {
                   type="button"
                   onClick={() => handleToggleStatus(u, currentStatus)}
                   title={currentStatus === 'ACTIVE' ? 'Tạm khóa quyền nhân viên' : 'Mở khóa tài khoản'}
-                  className={`p-1.5 rounded-lg border transition-colors cursor-pointer ${
+                  className={`w-6 h-6 rounded-md flex items-center justify-center bg-white border active:scale-[0.98] transition-all cursor-pointer ${
                     currentStatus === 'ACTIVE'
-                      ? 'text-outline hover:text-amber-600 hover:bg-amber-50 border-surface-container-high'
-                      : 'text-emerald-700 bg-emerald-50 border-emerald-200 hover:bg-emerald-100'
+                      ? 'text-[#64748b] hover:text-amber-600 hover:bg-amber-50 border-[#d8d6d0] hover:border-amber-300'
+                      : 'text-emerald-700 bg-emerald-50 border-emerald-300 hover:bg-emerald-100 hover:border-emerald-500'
                   }`}
                 >
-                  <span className="material-symbols-outlined text-[17px]">
+                  <span className="material-symbols-outlined text-[13px]">
                     {currentStatus === 'ACTIVE' ? 'lock' : 'lock_open'}
                   </span>
                 </button>
@@ -345,9 +345,9 @@ export default function AdminStaffPage() {
                   type="button"
                   onClick={() => handleDeleteStaff(u)}
                   title="Thu hồi quyền nhân sự"
-                  className="p-1.5 rounded-lg border border-surface-container-high text-outline hover:text-red-600 hover:bg-red-50 transition-colors cursor-pointer"
+                  className="w-6 h-6 rounded-md flex items-center justify-center bg-white hover:bg-rose-50 border border-rose-200 hover:border-rose-300 text-rose-600 hover:text-rose-700 active:scale-[0.98] transition-all cursor-pointer"
                 >
-                  <span className="material-symbols-outlined text-[17px]">person_remove</span>
+                  <span className="material-symbols-outlined text-[13px]">person_remove</span>
                 </button>
               </div>
             );

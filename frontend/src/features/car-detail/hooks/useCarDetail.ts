@@ -7,6 +7,30 @@ import { ListingDetail, ListingItem, ValuationResponse } from '@/types';
 import { getHighResImageUrl } from '@/lib/image';
 import { GalleryImage } from '../types';
 
+function cleanVehicleBrandModel(listing: ListingDetail) {
+  let brand = listing.brand_name || '';
+  let model = listing.model_name || '';
+  const variant = listing.variant_name || '';
+
+  if (!brand || !model) {
+    const rawTokens = (listing.title || '').trim().split(/\s+/);
+    const ignoredWords = new Set(['bán', 'xe', 'cần', 'chính', 'chủ', 'ô', 'tô']);
+    const cleanTokens = rawTokens.filter((t) => !ignoredWords.has(t.toLowerCase()));
+    if (!brand && cleanTokens.length > 0) {
+      brand = cleanTokens[0];
+    }
+    if (!model && cleanTokens.length > 1) {
+      model = cleanTokens[1];
+    }
+  }
+
+  return {
+    brand: brand || 'Toyota',
+    model: model || 'Camry',
+    variant: variant || undefined,
+  };
+}
+
 export function useCarDetail(id: string) {
   const [listing, setListing] = useState<ListingDetail | null>(null);
   const [valuation, setValuation] = useState<ValuationResponse | null>(null);
@@ -49,6 +73,42 @@ export function useCarDetail(id: string) {
         if (!mounted) return;
         setListing(data);
         setLoading(false);
+
+        // Tự động kích hoạt thẩm định giá AI & Gemini trong nền (Non-blocking)
+        setValuationLoading(true);
+        (async () => {
+          try {
+            const { brand, model, variant } = cleanVehicleBrandModel(data);
+            const valRes = await api.estimateValuation({
+              brand,
+              model,
+              variant,
+              manufacture_year: data.manufacture_year,
+              odometer_km: data.odometer_km || 10000,
+              body_type: data.body_type,
+              fuel_type: data.fuel_type,
+              transmission: data.transmission,
+              province_code: data.province_code,
+              condition: data.condition,
+              origin: data.origin,
+              accident_status: data.accident_status,
+              flood_status: data.flood_status,
+              service_history: data.service_history,
+              engine_repaired: data.engine_repaired,
+              transmission_repaired: data.transmission_repaired,
+              owner_count: data.owner_count,
+              repainted_parts_count: data.repainted_parts_count,
+              replaced_parts: data.replaced_parts,
+            });
+            if (mounted) {
+              setValuation(valRes);
+            }
+          } catch (valErr) {
+            console.warn('Auto valuation error:', valErr);
+          } finally {
+            if (mounted) setValuationLoading(false);
+          }
+        })();
 
         // Background parallel non-blocking fetch: Recommended cars
         // 1. Hiển thị toàn bộ tin nổi bật nếu có
@@ -118,22 +178,40 @@ export function useCarDetail(id: string) {
   }, [id]);
 
   // On-demand AI valuation triggered explicitly by user click
-  const requestValuation = useCallback(async () => {
+  const requestValuation = useCallback(async (silent = false) => {
     if (!listing || valuationLoading) return;
     setValuationLoading(true);
     try {
+      const { brand, model, variant } = cleanVehicleBrandModel(listing);
       const valRes = await api.estimateValuation({
-        brand: listing.title.split(' ')[0] || 'Xe',
-        model: listing.title.split(' ').slice(1, 3).join(' ') || 'Xe',
+        brand,
+        model,
+        variant,
         manufacture_year: listing.manufacture_year,
-        odometer_km: listing.odometer_km,
+        odometer_km: listing.odometer_km || 10000,
         body_type: listing.body_type,
+        fuel_type: listing.fuel_type,
+        transmission: listing.transmission,
         province_code: listing.province_code,
+        condition: listing.condition,
+        origin: listing.origin,
+        accident_status: listing.accident_status,
+        flood_status: listing.flood_status,
+        service_history: listing.service_history,
+        engine_repaired: listing.engine_repaired,
+        transmission_repaired: listing.transmission_repaired,
+        owner_count: listing.owner_count,
+        repainted_parts_count: listing.repainted_parts_count,
+        replaced_parts: listing.replaced_parts,
       });
       setValuation(valRes);
-      showToast('Đã hoàn tất thẩm định giá xe bằng AI AuraML™!');
+      if (!silent) {
+        showToast('Đã hoàn tất thẩm định giá xe bằng AI AuraML™ & Gemini!');
+      }
     } catch {
-      showToast('Không thể kết nối máy chủ định giá AI lúc này.');
+      if (!silent) {
+        showToast('Không thể kết nối máy chủ định giá AI lúc này.');
+      }
     } finally {
       setValuationLoading(false);
     }

@@ -56,6 +56,10 @@ export interface ListingItem {
 export interface ListingDetail extends ListingItem {
   brand_id?: string;
   brand_name?: string;
+  model_id?: string;
+  model_name?: string;
+  variant_id?: string;
+  variant_name?: string;
   description?: string;
   engine_displacement?: number;
   doors?: number;
@@ -115,17 +119,40 @@ export interface CarRecognitionResponse {
   notes?: string | null;
 }
 
+export interface MarketSource {
+  title: string;
+  url: string;
+  price_vnd?: number;
+  platform?: string;
+  location?: string;
+}
+
+export interface ValuationBreakdownItem {
+  category: string;
+  label: string;
+  impact: 'GIẢM' | 'TĂNG' | 'NGUYÊN BẢN';
+  percentage: number;
+  amount_vnd: number;
+  note: string;
+}
+
 export interface ValuationResponse {
   status: string;
   model_version: string;
   estimated_price_vnd: number | null;
+  base_price_vnd?: number | null;
+  condition_multiplier?: number;
+  total_condition_adjustment_vnd?: number;
+  breakdown_items?: ValuationBreakdownItem[];
   interval_low_vnd: number | null;
   interval_high_vnd: number | null;
   interval_method: string;
   confidence_level?: string;
   reference_count?: number;
   ml_price_vnd?: number;
+  gemini_market_price_vnd?: number | null;
   pricing_method?: string;
+  market_sources?: MarketSource[];
   reason?: string;
   similar_listings: ListingItem[];
   explanation?: ValuationExplanation;

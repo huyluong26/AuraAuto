@@ -45,27 +45,27 @@ export function ConfirmDialogModal({
       case 'danger':
         return {
           icon: icon || 'warning',
-          iconBg: 'bg-red-50 text-red-600 border border-red-200',
-          btnBg: 'bg-red-600 hover:bg-red-700 text-white shadow-xs',
+          iconBg: 'bg-rose-50 text-rose-600 border border-rose-200',
+          btnBg: 'bg-[#dc2626] hover:bg-[#b91c1c] text-white shadow-2xs',
         };
       case 'warning':
         return {
           icon: icon || 'priority_high',
-          iconBg: 'bg-amber-50 text-amber-600 border border-amber-200',
-          btnBg: 'bg-amber-600 hover:bg-amber-700 text-white shadow-xs',
+          iconBg: 'bg-amber-50 text-amber-700 border border-amber-200',
+          btnBg: 'bg-amber-600 hover:bg-amber-700 text-white shadow-2xs',
         };
       case 'success':
         return {
           icon: icon || 'check_circle',
-          iconBg: 'bg-emerald-50 text-emerald-600 border border-emerald-200',
-          btnBg: 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs',
+          iconBg: 'bg-emerald-50 text-emerald-700 border border-emerald-200',
+          btnBg: 'bg-[#166534] hover:bg-[#14532d] text-white shadow-2xs',
         };
       case 'primary':
       default:
         return {
           icon: icon || 'help_outline',
-          iconBg: 'bg-secondary-container/50 text-secondary border border-secondary/20',
-          btnBg: 'bg-primary hover:bg-primary/90 text-on-primary shadow-xs',
+          iconBg: 'bg-[#fcf9f2] text-[#8c6d3b] border border-[#d8c5a2]',
+          btnBg: 'bg-[#0f172a] hover:bg-black text-white border border-neutral-800 shadow-2xs',
         };
     }
   };
@@ -74,35 +74,35 @@ export function ConfirmDialogModal({
 
   return (
     <div
-      className="fixed inset-0 z-[10000] flex items-center justify-center p-4 bg-primary/60 backdrop-blur-sm animate-in fade-in duration-200"
+      className="fixed inset-0 z-[10000] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md animate-in fade-in duration-200"
       onClick={onCancel}
     >
       <div
-        className="w-full max-w-md bg-surface-container-lowest rounded-2xl border border-surface-container-high shadow-2xl p-6 relative overflow-hidden animate-in zoom-in-95 duration-150"
+        className="w-full max-w-md bg-white rounded-2xl border border-[#e8e6e1] shadow-[0_24px_60px_rgba(0,0,0,0.18)] p-6 relative overflow-hidden animate-in zoom-in-95 duration-150"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-start gap-4">
-          <div className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 ${style.iconBg}`}>
-            <span className="material-symbols-outlined text-[26px]">{style.icon}</span>
+          <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${style.iconBg}`}>
+            <span className="material-symbols-outlined text-[22px]">{style.icon}</span>
           </div>
 
           <div className="flex-1 min-w-0">
-            <h3 className="font-headline-sm text-headline-sm font-semibold text-primary leading-tight">
+            <h3 className="text-base font-bold text-[#111827] leading-tight font-headline">
               {title}
             </h3>
-            <div className="mt-2 text-on-surface-variant font-body-sm text-[13px] leading-relaxed whitespace-pre-line">
+            <div className="mt-2 text-[#4b5563] text-xs sm:text-[13px] leading-relaxed whitespace-pre-line">
               {message}
             </div>
           </div>
         </div>
 
         {/* Action Buttons */}
-        <div className="mt-6 flex items-center justify-end gap-3 pt-4 border-t border-surface-container-high">
+        <div className="mt-6 flex items-center justify-end gap-2 pt-4 border-t border-[#f0ede6]">
           {cancelText && (
             <button
               type="button"
               onClick={onCancel}
-              className="px-4 py-2 rounded-xl border border-surface-container-high bg-surface-container hover:bg-surface-container-highest text-on-surface font-label-md text-label-md font-medium transition-colors cursor-pointer"
+              className="px-3.5 py-1.5 rounded-md border border-[#d8d6d0] bg-white hover:bg-[#faf9f6] text-[#334155] text-xs font-medium transition-colors cursor-pointer shadow-2xs active:scale-[0.99]"
             >
               {cancelText}
             </button>
@@ -111,7 +111,7 @@ export function ConfirmDialogModal({
             type="button"
             onClick={onConfirm}
             autoFocus
-            className={`px-5 py-2 rounded-xl font-label-md text-label-md font-semibold transition-all cursor-pointer ${style.btnBg}`}
+            className={`px-4 py-1.5 rounded-md text-xs font-semibold transition-all cursor-pointer shadow-2xs active:scale-[0.99] ${style.btnBg}`}
           >
             {confirmText}
           </button>

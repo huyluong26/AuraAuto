@@ -16,31 +16,31 @@ export function ToastContainer({ toasts, onDismiss }: ToastContainerProps) {
       case 'success':
         return {
           icon: 'check_circle',
-          container: 'bg-surface-container-lowest border-emerald-500/40 text-on-surface shadow-[0_8px_30px_rgb(16,185,129,0.12)]',
-          iconColor: 'text-emerald-600 bg-emerald-50',
-          accent: 'bg-emerald-500',
+          container: 'bg-[#121315]/95 border-[#2c2d30] text-white shadow-[0_16px_40px_rgba(0,0,0,0.4)] backdrop-blur-md',
+          iconColor: 'text-[#d4af37] bg-[#d4af37]/10',
+          accent: 'bg-gradient-to-b from-[#d4af37] to-[#8c6d3b]',
         };
       case 'error':
         return {
           icon: 'error',
-          container: 'bg-surface-container-lowest border-rose-500/40 text-on-surface shadow-[0_8px_30px_rgb(225,29,72,0.12)]',
-          iconColor: 'text-rose-600 bg-rose-50',
+          container: 'bg-[#1a0f0f]/95 border-rose-900/50 text-white shadow-[0_16px_40px_rgba(225,29,72,0.2)] backdrop-blur-md',
+          iconColor: 'text-rose-400 bg-rose-500/10',
           accent: 'bg-rose-500',
         };
       case 'warning':
         return {
           icon: 'warning',
-          container: 'bg-surface-container-lowest border-amber-500/40 text-on-surface shadow-[0_8px_30px_rgb(245,158,11,0.12)]',
-          iconColor: 'text-amber-600 bg-amber-50',
+          container: 'bg-[#18140c]/95 border-amber-900/50 text-white shadow-[0_16px_40px_rgba(245,158,11,0.2)] backdrop-blur-md',
+          iconColor: 'text-amber-400 bg-amber-500/10',
           accent: 'bg-amber-500',
         };
       case 'info':
       default:
         return {
           icon: 'info',
-          container: 'bg-surface-container-lowest border-secondary/40 text-on-surface shadow-[0_8px_30px_rgb(114,90,55,0.12)]',
-          iconColor: 'text-secondary bg-secondary-container/40',
-          accent: 'bg-secondary',
+          container: 'bg-[#121315]/95 border-[#2c2d30] text-white shadow-[0_16px_40px_rgba(0,0,0,0.4)] backdrop-blur-md',
+          iconColor: 'text-[#b89b72] bg-[#b89b72]/10',
+          accent: 'bg-[#b89b72]',
         };
     }
   };
@@ -65,11 +65,11 @@ export function ToastContainer({ toasts, onDismiss }: ToastContainerProps) {
 
             {/* Content */}
             <div className="flex-1 min-w-0 pr-2">
-              <div className="font-label-md text-label-md font-semibold text-primary leading-snug">
+              <div className="text-xs font-semibold text-white tracking-wide">
                 {t.title}
               </div>
               {t.message && (
-                <div className="font-body-sm text-[12px] text-on-surface-variant mt-0.5 leading-relaxed line-clamp-3">
+                <div className="text-[12px] text-neutral-300 mt-0.5 leading-relaxed line-clamp-3">
                   {t.message}
                 </div>
               )}
@@ -79,7 +79,7 @@ export function ToastContainer({ toasts, onDismiss }: ToastContainerProps) {
             <button
               type="button"
               onClick={() => onDismiss(t.id)}
-              className="p-1 rounded-md text-outline hover:text-primary hover:bg-surface-container-high transition-colors cursor-pointer shrink-0"
+              className="p-1 rounded-md text-neutral-400 hover:text-white hover:bg-white/10 transition-colors cursor-pointer shrink-0"
               title="Đóng thông báo"
             >
               <span className="material-symbols-outlined text-[16px]">close</span>

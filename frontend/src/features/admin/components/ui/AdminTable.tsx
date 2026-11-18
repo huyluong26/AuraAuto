@@ -42,13 +42,13 @@ export function AdminTable<T>({
     data.some((item) => selectedIds.includes(keyExtractor(item)));
 
   return (
-    <div className="w-full bg-surface-container-lowest rounded-2xl border border-surface-container-high shadow-xs overflow-hidden">
+    <div className="w-full bg-white rounded-xl border border-[#e8e6e1] shadow-2xs overflow-hidden">
       <div className="overflow-x-auto">
         <table className="w-full text-left border-collapse">
           <thead>
-            <tr className="bg-surface-container-low border-b border-surface-container-high text-outline text-[11px] font-semibold uppercase tracking-wider">
+            <tr className="bg-[#faf9f6] border-b border-[#e8e6e1] text-[#6b7280] text-[11px] font-semibold uppercase tracking-wider">
               {isSelectable && (
-                <th className="py-3.5 px-4 w-10 text-center">
+                <th className="py-3 px-3.5 w-10 text-center shrink-0">
                   <input
                     type="checkbox"
                     checked={isAllSelected}
@@ -56,7 +56,7 @@ export function AdminTable<T>({
                       if (el) el.indeterminate = Boolean(isPartiallySelected);
                     }}
                     onChange={(e) => onSelectAll && onSelectAll(e.target.checked)}
-                    className="w-4 h-4 rounded border-outline/50 text-secondary accent-secondary cursor-pointer focus:ring-secondary/30"
+                    className="w-3.5 h-3.5 rounded border-[#d1d5db] text-[#111827] accent-[#111827] cursor-pointer"
                   />
                 </th>
               )}
@@ -72,7 +72,7 @@ export function AdminTable<T>({
                   <th
                     key={col.key}
                     style={{ width: col.width }}
-                    className={`py-3.5 px-4 ${alignClass}`}
+                    className={`py-3 px-3.5 ${alignClass}`}
                   >
                     {col.header}
                   </th>
@@ -80,29 +80,29 @@ export function AdminTable<T>({
               })}
 
               {rowActions && (
-                <th className="py-3.5 px-4 text-right w-44">{rowActionsHeader}</th>
+                <th className="py-3 px-3.5 text-right w-40 whitespace-nowrap">{rowActionsHeader}</th>
               )}
             </tr>
           </thead>
 
-          <tbody className="divide-y divide-surface-container-high text-on-surface text-sm">
+          <tbody className="divide-y divide-[#f0ede6] text-[#1a1c1a] text-sm">
             {loading ? (
               // Loading skeleton rows
               Array.from({ length: 5 }).map((_, index) => (
                 <tr key={index} className="animate-pulse">
                   {isSelectable && (
-                    <td className="py-4 px-4 text-center">
-                      <div className="w-4 h-4 bg-surface-container-high rounded mx-auto" />
+                    <td className="py-3.5 px-3.5 text-center">
+                      <div className="w-4 h-4 bg-neutral-200 rounded mx-auto" />
                     </td>
                   )}
                   {columns.map((col) => (
-                    <td key={col.key} className="py-4 px-4">
-                      <div className="h-4 bg-surface-container-high rounded w-3/4" />
+                    <td key={col.key} className="py-3.5 px-3.5">
+                      <div className="h-4 bg-neutral-200 rounded w-3/4" />
                     </td>
                   ))}
                   {rowActions && (
-                    <td className="py-4 px-4 text-right">
-                      <div className="h-8 bg-surface-container-high rounded-xl w-24 ml-auto" />
+                    <td className="py-3.5 px-3.5 text-right">
+                      <div className="h-8 bg-neutral-200 rounded-lg w-24 ml-auto" />
                     </td>
                   )}
                 </tr>
@@ -115,13 +115,13 @@ export function AdminTable<T>({
                   className="py-16 text-center"
                 >
                   <div className="flex flex-col items-center justify-center">
-                    <div className="w-14 h-14 rounded-2xl bg-surface-container-low border border-surface-container-high flex items-center justify-center text-outline mb-3">
-                      <span className="material-symbols-outlined text-[32px]">{emptyIcon}</span>
+                    <div className="w-12 h-12 rounded-xl bg-neutral-100 border border-[#e8e6e1] flex items-center justify-center text-neutral-400 mb-3">
+                      <span className="material-symbols-outlined text-[28px]">{emptyIcon}</span>
                     </div>
-                    <span className="font-headline-sm text-sm font-semibold text-primary">
+                    <span className="text-sm font-semibold text-[#111827]">
                       {emptyMessage}
                     </span>
-                    <span className="font-body-sm text-xs text-outline mt-1">
+                    <span className="text-xs text-[#6b7280] mt-1">
                       Thử điều chỉnh bộ lọc hoặc từ khóa tìm kiếm
                     </span>
                   </div>
@@ -139,20 +139,20 @@ export function AdminTable<T>({
                     onClick={() => onRowClick && onRowClick(item)}
                     className={`transition-colors group ${
                       isSelected
-                        ? 'bg-secondary-container/20'
-                        : 'hover:bg-surface-container-low'
+                        ? 'bg-amber-50/30'
+                        : 'hover:bg-[#fbfaf8]'
                     } ${onRowClick ? 'cursor-pointer' : ''}`}
                   >
                     {isSelectable && (
                       <td
-                        className="py-4 px-4 text-center"
+                        className="py-3.5 px-3.5 text-center shrink-0 align-middle"
                         onClick={(e) => e.stopPropagation()}
                       >
                         <input
                           type="checkbox"
                           checked={isSelected}
                           onChange={() => onToggleSelect && onToggleSelect(id)}
-                          className="w-4 h-4 rounded border-outline/50 text-secondary accent-secondary cursor-pointer focus:ring-secondary/30"
+                          className="w-3.5 h-3.5 rounded border-[#d1d5db] text-[#111827] accent-[#111827] cursor-pointer"
                         />
                       </td>
                     )}
@@ -166,7 +166,7 @@ export function AdminTable<T>({
                           : 'text-left';
 
                       return (
-                        <td key={col.key} className={`py-4 px-4 ${alignClass}`}>
+                        <td key={col.key} className={`py-3.5 px-3.5 align-middle ${alignClass}`}>
                           {col.render ? col.render(item) : (item as any)[col.key]}
                         </td>
                       );
@@ -174,7 +174,7 @@ export function AdminTable<T>({
 
                     {rowActions && (
                       <td
-                        className="py-4 px-4 text-right whitespace-nowrap"
+                        className="py-3.5 px-3.5 text-right whitespace-nowrap align-middle"
                         onClick={(e) => e.stopPropagation()}
                       >
                         {rowActions(item)}

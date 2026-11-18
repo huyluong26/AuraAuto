@@ -5,16 +5,14 @@ import { api } from '@/lib/api';
 import { CarRecognitionResponse } from '@/types';
 import {
   CarListingStep,
-  PhotoSlotKey,
-  SlotPhotoState,
   BrandItem,
   ModelItem,
-  CommitmentsState,
-  VehicleHistoryState,
-  TradeOptionsState,
   Coordinates,
 } from '../types';
-import { POWERTRAIN_OPTIONS, TRANSMISSION_OPTIONS, PROVINCE_COORDINATES, GUIDED_PHOTO_SLOTS } from '../constants';
+import { POWERTRAIN_OPTIONS, TRANSMISSION_OPTIONS, PROVINCE_COORDINATES } from '../constants';
+import { useListingPhotos } from './useListingPhotos';
+import { useListingTechnicalHistory } from './useListingTechnicalHistory';
+import { useListingPricing } from './useListingPricing';
 
 export function useCreateListing() {
   // Step Navigation State (1 -> 5)
@@ -42,7 +40,7 @@ export function useCreateListing() {
   const [locationAddress, setLocationAddress] = useState('');
   const [coordinates, setCoordinates] = useState<Coordinates>({ lat: 10.7769, lng: 106.7009 });
 
-  // Step 2: Technical Specifications (Blank initial state, user explicitly chooses)
+  // Step 2: Technical Specifications
   const [condition, setCondition] = useState('');
   const [origin, setOrigin] = useState('');
   const [bodyType, setBodyType] = useState('');
@@ -55,49 +53,6 @@ export function useCreateListing() {
   const [color, setColor] = useState('');
   const [interiorColor, setInteriorColor] = useState('');
   const [description, setDescription] = useState('');
-  const [commitments, setCommitments] = useState<CommitmentsState>({
-    isOwner: false,
-    maintenanceHistory: false,
-    noAccidentFlood: false,
-    readyInspection: false,
-  });
-  const [vehicleHistory, setVehicleHistory] = useState<VehicleHistoryState>({
-    accidentStatus: 'UNKNOWN',
-    floodStatus: 'UNKNOWN',
-    serviceHistory: 'UNKNOWN',
-    ownerCount: 0,
-    repaintedPartsCount: 0,
-    replacedParts: '',
-    engineRepaired: false,
-    transmissionRepaired: false,
-  });
-
-  // Step 3: Guided Photo Slots (8 core slots, initially null)
-  const [slotPhotos, setSlotPhotos] = useState<Record<PhotoSlotKey, SlotPhotoState | null>>({
-    front: null,
-    front_34: null,
-    rear: null,
-    cockpit: null,
-    odo: null,
-    seats: null,
-    engine: null,
-    inspection_sticker: null,
-  });
-  const [extraPhotos, setExtraPhotos] = useState<SlotPhotoState[]>([]);
-
-  // Step 4: Pricing & CatBoost AI Valuation (Blank initial state)
-  const [priceVnd, setPriceVnd] = useState('');
-  const [tradeOptions, setTradeOptions] = useState<TradeOptionsState>({
-    negotiable: false,
-    tradeSuv: false,
-  });
-  const [aiLoading, setAiLoading] = useState(false);
-  const [aiPriceSuggestion, setAiPriceSuggestion] = useState<number | null>(null);
-  const [aiIntervalLow, setAiIntervalLow] = useState<number | null>(null);
-  const [aiIntervalHigh, setAiIntervalHigh] = useState<number | null>(null);
-  const [aiConfidence, setAiConfidence] = useState<string | null>(null);
-  const [aiEstimateNote, setAiEstimateNote] = useState<string | null>(null);
-  const [aiError, setAiError] = useState<string | null>(null);
 
   // Step 5: Seller Contact & Privacy Shield
   const [privacyShield, setPrivacyShield] = useState(true);
@@ -120,7 +75,29 @@ export function useCreateListing() {
     });
   }, []);
 
-  // Fetch real brands from backend API without auto-selecting any brand
+  // Sub-hooks for focused domain responsibilities (SRP)
+  const photos = useListingPhotos(() => clearFieldError('photo'));
+  const tech = useListingTechnicalHistory();
+  const pricing = useListingPricing({
+    brandName,
+    modelName,
+    trim,
+    manufactureYear,
+    odometerKm,
+    bodyType,
+    powertrain,
+    transmission,
+    provinceCode,
+    engineDisplacement,
+    seats,
+    doors,
+    origin,
+    condition,
+    vehicleHistory: tech.vehicleHistory,
+    onClearPriceError: () => clearFieldError('price'),
+  });
+
+  // Fetch real brands from backend API
   useEffect(() => {
     let isMounted = true;
     async function fetchBrands() {
@@ -129,7 +106,6 @@ export function useCreateListing() {
         const data = await api.getBrands();
         if (isMounted && data) {
           setBrands(data);
-          // Do not auto-select first brand, leave clean for user input
         }
       } catch (err) {
         console.warn('Failed to load brands from API:', err);
@@ -143,7 +119,7 @@ export function useCreateListing() {
     };
   }, []);
 
-  // Fetch real models when brandId changes without auto-selecting any model
+  // Fetch real models when brandId changes
   useEffect(() => {
     let isMounted = true;
     async function fetchModels() {
@@ -155,7 +131,6 @@ export function useCreateListing() {
         const data = await api.getModelsByBrand(brandId);
         if (isMounted && data) {
           setModels(data);
-          // Do not auto-select first model, user will explicitly pick
         }
       } catch (err) {
         console.warn('Failed to load models for brand:', err);
@@ -167,7 +142,7 @@ export function useCreateListing() {
     };
   }, [brandId]);
 
-  // Tự động kiểm tra xem tài khoản đã đăng ký Showroom chưa để nạp sẵn
+  // Check Showroom profile & restore draft
   useEffect(() => {
     let isMounted = true;
     async function checkMyShowroom() {
@@ -175,7 +150,6 @@ export function useCreateListing() {
         let targetAddress = '';
         let targetProvince = '';
 
-        // 1. Kiểm tra nhanh từ cache localStorage để phản hồi tức thì UI
         if (typeof window !== 'undefined') {
           const rawUser = localStorage.getItem('user');
           if (rawUser) {
@@ -203,7 +177,6 @@ export function useCreateListing() {
           }
         }
 
-        // 2. Đồng bộ mới nhất từ server
         try {
           const sr = await api.getMyShowroom();
           if (isMounted && sr) {
@@ -225,7 +198,6 @@ export function useCreateListing() {
           }
         } catch {}
 
-        // 3. Fallback lấy thêm thông tin từ getMe() nếu địa chỉ showroom còn trống
         if (!targetAddress || !targetProvince) {
           try {
             const me = await api.getMe();
@@ -246,13 +218,11 @@ export function useCreateListing() {
             }
           } catch {}
         }
-      } catch {
-        // Tài khoản cá nhân thông thường
-      }
+      } catch {}
     }
     checkMyShowroom();
 
-    // 2. Phục hồi bản nháp chuyển tiếp từ Định Giá AI (nếu có)
+    // Phục hồi bản nháp chuyển tiếp từ Định Giá AI (nếu có)
     if (typeof window !== 'undefined') {
       try {
         const rawDraft = localStorage.getItem('aura_listing_draft');
@@ -291,14 +261,12 @@ export function useCreateListing() {
           if (draft.provinceCode) setProvinceCode(draft.provinceCode);
           if (draft.locationAddress) setLocationAddress(draft.locationAddress);
           if (draft.description) setDescription(draft.description);
-          if (draft.vehicleHistory) setVehicleHistory(draft.vehicleHistory);
-          if (draft.commitments) setCommitments(draft.commitments);
-          if (draft.priceVnd) setPriceVnd(String(draft.priceVnd));
+          if (draft.vehicleHistory) tech.setVehicleHistory(draft.vehicleHistory);
+          if (draft.commitments) tech.setCommitments(draft.commitments);
+          if (draft.priceVnd) pricing.setPriceVnd(String(draft.priceVnd));
           localStorage.removeItem('aura_listing_draft');
         }
-      } catch {
-        // ignore
-      }
+      } catch {}
     }
 
     return () => {
@@ -352,7 +320,7 @@ export function useCreateListing() {
     [clearFieldError]
   );
 
-  // Year change
+  // Basic change handlers
   const handleYearChange = useCallback(
     (val: number) => {
       setManufactureYear(val);
@@ -361,7 +329,6 @@ export function useCreateListing() {
     [clearFieldError]
   );
 
-  // Province change syncs mini-map center
   const handleProvinceChange = useCallback(
     (code: string) => {
       setProvinceCode(code);
@@ -373,7 +340,6 @@ export function useCreateListing() {
     [clearFieldError]
   );
 
-  // Condition change
   const handleConditionChange = useCallback(
     (val: string) => {
       setCondition(val);
@@ -382,7 +348,6 @@ export function useCreateListing() {
     [clearFieldError]
   );
 
-  // Origin change
   const handleOriginChange = useCallback(
     (val: string) => {
       setOrigin(val);
@@ -391,7 +356,6 @@ export function useCreateListing() {
     [clearFieldError]
   );
 
-  // Body type change
   const handleBodyTypeChange = useCallback(
     (val: string) => {
       setBodyType(val);
@@ -400,7 +364,6 @@ export function useCreateListing() {
     [clearFieldError]
   );
 
-  // Transmission change
   const handleTransmissionChange = useCallback(
     (val: string) => {
       setTransmission(val);
@@ -409,7 +372,6 @@ export function useCreateListing() {
     [clearFieldError]
   );
 
-  // Powertrain change
   const handlePowertrainChange = useCallback(
     (val: string) => {
       setPowertrain(val);
@@ -418,7 +380,6 @@ export function useCreateListing() {
     [clearFieldError]
   );
 
-  // Color change with error clearing
   const handleColorChange = useCallback(
     (val: string) => {
       setColor(val);
@@ -427,7 +388,6 @@ export function useCreateListing() {
     [clearFieldError]
   );
 
-  // Odometer change with strictly numbers check
   const handleOdometerChange = useCallback(
     (val: string) => {
       setOdometerKm(val);
@@ -436,50 +396,9 @@ export function useCreateListing() {
     [clearFieldError]
   );
 
-  // Commitments toggle
-  const toggleCommitment = useCallback((key: keyof CommitmentsState) => {
-    setCommitments((prev) => ({ ...prev, [key]: !prev[key] }));
-  }, []);
-
-  const updateVehicleHistory = useCallback((patch: Partial<VehicleHistoryState>) => {
-    setVehicleHistory((prev) => ({ ...prev, ...patch }));
-  }, []);
-
-  // Trade option toggle
-  const toggleTradeOption = useCallback((key: keyof TradeOptionsState) => {
-    setTradeOptions((prev) => ({ ...prev, [key]: !prev[key] }));
-  }, []);
-
-  // Guided Slot Photo Upload
-  const handleSlotPhotoUpload = useCallback(
-    (slotKey: PhotoSlotKey, file: File) => {
-      const previewUrl = URL.createObjectURL(file);
-      setSlotPhotos((prev) => ({ ...prev, [slotKey]: { file, previewUrl } }));
-      if (slotKey === 'front') clearFieldError('photo');
-    },
-    [clearFieldError]
-  );
-
-  const removeSlotPhoto = useCallback((slotKey: PhotoSlotKey) => {
-    setSlotPhotos((prev) => ({ ...prev, [slotKey]: null }));
-  }, []);
-
-  const handleExtraPhotosUpload = useCallback((files: File[]) => {
-    const newItems: SlotPhotoState[] = files.map((f) => ({
-      file: f,
-      previewUrl: URL.createObjectURL(f),
-    }));
-    setExtraPhotos((prev) => [...prev, ...newItems].slice(0, 14));
-  }, []);
-
-  const removeExtraPhoto = useCallback((index: number) => {
-    setExtraPhotos((prev) => prev.filter((_, i) => i !== index));
-  }, []);
-
   // Gemini AI Image Recognition Auto-fill
   const handleApplyCarRecognition = useCallback(
     (data: CarRecognitionResponse, file?: File) => {
-      // 1. Hãng xe
       if (data.brand) {
         const foundBrand = brands.find(
           (b) => b.name.toLowerCase() === data.brand?.toLowerCase()
@@ -493,36 +412,30 @@ export function useCreateListing() {
         clearFieldError('brand');
       }
 
-      // 2. Dòng xe
       if (data.model) {
         setModelName(data.model);
         clearFieldError('model');
       }
 
-      // 3. Phiên bản
       if (data.trim) {
         setTrim(data.trim);
       }
 
-      // 4. Năm sản xuất
       if (data.manufacture_year && data.manufacture_year >= 1990) {
         setManufactureYear(data.manufacture_year);
         clearFieldError('manufactureYear');
       }
 
-      // 5. Kiểu dáng
       if (data.body_type) {
         setBodyType(data.body_type.toUpperCase());
         clearFieldError('bodyType');
       }
 
-      // 6. Màu ngoại thất
       if (data.color) {
         setColor(data.color);
         clearFieldError('color');
       }
 
-      // 7. Hộp số
       if (data.transmission) {
         const transVal = data.transmission.toUpperCase();
         if (transVal.includes('AUTO') || transVal === 'AUTOMATIC') {
@@ -533,7 +446,6 @@ export function useCreateListing() {
         clearFieldError('transmission');
       }
 
-      // 8. Nhiên liệu / Động cơ
       if (data.fuel_type) {
         const f = data.fuel_type.toUpperCase();
         if (f.includes('GAS') || f.includes('XĂNG')) setPowertrain('gasoline');
@@ -543,131 +455,30 @@ export function useCreateListing() {
         clearFieldError('powertrain');
       }
 
-      // 9. Số chỗ ngồi
       if (data.seats && data.seats > 0) {
         setSeats(data.seats);
       }
 
-      // 10. Số km ODO
       if (data.odometer_km && data.odometer_km > 0) {
         setOdometerKm(String(data.odometer_km));
         clearFieldError('odometer');
       }
 
-      // 11. Mô tả chi tiết gợi ý
       if (data.suggested_description) {
         setDescription(data.suggested_description);
       }
 
-      // 12. Gắn ảnh xe vào slot ảnh góc chính (front) để không cần tải lại ở bước 3
       if (file && file.size > 0) {
         const previewUrl = URL.createObjectURL(file);
-        setSlotPhotos((prev) => ({
+        photos.setSlotPhotos((prev) => ({
           ...prev,
           front: prev.front || { file, previewUrl },
         }));
         clearFieldError('photo');
       }
     },
-    [brands, clearFieldError]
+    [brands, clearFieldError, photos]
   );
-
-  // AI Price Guidance based on ML Model features
-  const handleGetAIEstimate = useCallback(async () => {
-    setAiError(null);
-    setAiEstimateNote(null);
-    if (!brandName.trim() || !modelName.trim() || !manufactureYear || !odometerKm.trim()) {
-      setAiError('Vui lòng nhập hãng, dòng xe, năm sản xuất và số km ở bước 1 trước khi định giá.');
-      return;
-    }
-    setAiLoading(true);
-    try {
-      const cleanOdo = parseInt(odometerKm.replace(/\D/g, ''), 10);
-      if (!Number.isFinite(cleanOdo) || cleanOdo <= 0) {
-        setAiError('Số km ODO phải lớn hơn 0.');
-        return;
-      }
-      const matchedTrans = TRANSMISSION_OPTIONS.find((t) => t.id === transmission);
-      const matchedPower = POWERTRAIN_OPTIONS.find((p) => p.value === powertrain);
-      const cleanEngineDisp = parseFloat(engineDisplacement.replace(/[^\d.]/g, '')) || undefined;
-
-      const res = await api.estimateValuation({
-        brand: brandName,
-        model: modelName,
-        variant: trim || undefined,
-        manufacture_year: manufactureYear,
-        odometer_km: cleanOdo,
-        body_type: bodyType || 'SEDAN',
-        fuel_type: matchedPower?.dbValue || 'GASOLINE',
-        transmission: matchedTrans?.value || 'AUTOMATIC',
-        province_code: provinceCode || undefined,
-        engine_displacement: cleanEngineDisp,
-        seats: seats || undefined,
-        doors: doors || undefined,
-        origin: origin || undefined,
-      });
-
-      if (res.status === 'PREDICTED' && res.estimated_price_vnd) {
-        setAiPriceSuggestion(res.estimated_price_vnd);
-        setAiIntervalLow(res.interval_low_vnd || null);
-        setAiIntervalHigh(res.interval_high_vnd || null);
-        setAiConfidence(res.confidence_level || 'MEDIUM');
-
-        // Nếu người dùng chưa nhập giá thì tự động gợi ý điền
-        if (res.confidence_level === 'MEDIUM' && !priceVnd) {
-          setPriceVnd(res.estimated_price_vnd.toLocaleString('vi-VN'));
-          clearFieldError('price');
-        }
-        const confidence = res.confidence_level === 'MEDIUM' ? 'Độ tin cậy cao' : 'Tham khảo mở rộng';
-        const range = res.interval_low_vnd && res.interval_high_vnd
-          ? `Khoảng giá thị trường hợp lý: ${res.interval_low_vnd.toLocaleString('vi-VN')} ₫ – ${res.interval_high_vnd.toLocaleString('vi-VN')} ₫.`
-          : '';
-        const method = 'Được tính toán bởi mô hình CatBoost ML trên dữ liệu giao dịch thực tế.';
-        setAiEstimateNote(`${range} ${confidence}. ${method}${res.reason ? ` Ghi chú: ${res.reason}` : ''}`.trim());
-      } else {
-        setAiPriceSuggestion(null);
-        setAiIntervalLow(null);
-        setAiIntervalHigh(null);
-        setAiConfidence(null);
-        setAiEstimateNote(null);
-        setAiError(res.reason || 'Chưa đủ dữ liệu để định giá xe này. Bạn vẫn có thể tự nhập giá bán.');
-      }
-    } catch (err) {
-      console.warn('Valuation error:', err);
-      setAiPriceSuggestion(null);
-      setAiIntervalLow(null);
-      setAiIntervalHigh(null);
-      setAiConfidence(null);
-      setAiEstimateNote(null);
-      setAiError(err instanceof Error ? err.message : 'Không kết nối được dịch vụ định giá. Vui lòng thử lại.');
-    } finally {
-      setAiLoading(false);
-    }
-  }, [
-    brandName,
-    modelName,
-    trim,
-    manufactureYear,
-    odometerKm,
-    bodyType,
-    powertrain,
-    transmission,
-    provinceCode,
-    engineDisplacement,
-    seats,
-    doors,
-    origin,
-    clearFieldError,
-    priceVnd,
-  ]);
-
-  // Hàm áp dụng giá nhanh từ AI vào ô mức giá mong muốn
-  const handleApplyAiPrice = useCallback((suggestedPrice: number) => {
-    if (suggestedPrice && suggestedPrice > 0) {
-      setPriceVnd(suggestedPrice.toLocaleString('vi-VN'));
-      clearFieldError('price');
-    }
-  }, [clearFieldError]);
 
   // Step Validation & Navigation
   const validateStep = useCallback(
@@ -711,11 +522,12 @@ export function useCreateListing() {
           newErrors.color = 'Vui lòng chọn hoặc nhập màu sơn ngoại thất của xe.';
         }
       } else if (step === 3) {
-        if (!slotPhotos.front) {
-          newErrors.photo = 'Vui lòng tải lên ít nhất ảnh đầu xe chính diện (ảnh bìa bắt buộc).';
+        const hasAnyPhoto = Object.values(photos.slotPhotos).some(Boolean) || photos.extraPhotos.length > 0;
+        if (!hasAnyPhoto) {
+          newErrors.photo = 'Vui lòng tải lên ít nhất 1 hình ảnh của xe để tiếp tục.';
         }
       } else if (step === 4) {
-        const cleanPrice = parseInt(priceVnd.replace(/\D/g, ''), 10);
+        const cleanPrice = parseInt(pricing.priceVnd.replace(/\D/g, ''), 10);
         if (!cleanPrice || cleanPrice <= 0) {
           newErrors.price = 'Vui lòng nhập mức giá chuyển nhượng xe hợp lệ (phải là số > 0).';
         }
@@ -742,8 +554,9 @@ export function useCreateListing() {
       transmission,
       powertrain,
       color,
-      slotPhotos.front,
-      priceVnd,
+      photos.slotPhotos,
+      photos.extraPhotos,
+      pricing.priceVnd,
     ]
   );
 
@@ -778,26 +591,6 @@ export function useCreateListing() {
     [currentStep, validateStep]
   );
 
-  // Danh sách ảnh kèm nhãn chuẩn xác theo GUIDED_PHOTO_SLOTS và ảnh chi tiết
-  const orderedSlotPhotosWithLabels = GUIDED_PHOTO_SLOTS.map((slot) => {
-    const photo = slotPhotos[slot.key];
-    if (!photo) return null;
-    return {
-      file: photo.file,
-      previewUrl: photo.previewUrl,
-      label: slot.label,
-    };
-  }).filter(Boolean) as { file: File; previewUrl: string; label: string }[];
-
-  const extraPhotosWithLabels = extraPhotos.map((photo, i) => ({
-    file: photo.file,
-    previewUrl: photo.previewUrl,
-    label: `Ảnh chi tiết #${i + 1}`,
-  }));
-
-  const allPhotosWithLabels = [...orderedSlotPhotosWithLabels, ...extraPhotosWithLabels];
-  const uploadedPhotosList = allPhotosWithLabels.map((p) => ({ file: p.file, previewUrl: p.previewUrl }));
-
   // Final Form Submit Handler
   const handleSubmit = useCallback(
     async (e: React.FormEvent) => {
@@ -810,7 +603,6 @@ export function useCreateListing() {
 
       setSubmitting(true);
       try {
-        // Resolve Brand and Model UUID dynamically if custom typed
         let finalBrandId = brandId;
         let finalModelId = modelId;
 
@@ -837,8 +629,8 @@ export function useCreateListing() {
           }
         }
 
-        // Collect files to upload
-        const filesToUpload = allPhotosWithLabels.map((item) => item.file);
+        // Upload photos
+        const filesToUpload = photos.allPhotosWithLabels.map((item) => item.file);
         let mediaItems: any[] = [];
 
         if (filesToUpload.length > 0) {
@@ -852,7 +644,7 @@ export function useCreateListing() {
                 media_type: 'IMAGE',
                 is_primary: idx === 0,
                 sort_order: idx,
-                label: allPhotosWithLabels[idx]?.label || `Góc chụp #${idx + 1}`,
+                label: photos.allPhotosWithLabels[idx]?.label || `Góc chụp #${idx + 1}`,
               }));
             }
           } catch (uploadErr) {
@@ -863,21 +655,21 @@ export function useCreateListing() {
         const matchedTrans = TRANSMISSION_OPTIONS.find((t) => t.id === transmission);
         const matchedPower = POWERTRAIN_OPTIONS.find((p) => p.value === powertrain);
         const parsedOdo = parseInt(odometerKm.replace(/\D/g, ''), 10) || 0;
-        const parsedPrice = parseInt(priceVnd.replace(/\D/g, ''), 10) || 0;
+        const parsedPrice = parseInt(pricing.priceVnd.replace(/\D/g, ''), 10) || 0;
         const fullTitle = `${brandName} ${modelName} ${trim} ${manufactureYear}`.replace(/\s+/g, ' ').trim();
 
         const commitmentsList = [
-          commitments.isOwner && 'Chính chủ cá nhân đứng tên',
-          commitments.maintenanceHistory && 'Lịch sử bảo dưỡng chính hãng',
-          commitments.noAccidentFlood && 'Cam kết không đâm đụng, thủy kích',
-          commitments.readyInspection && 'Sẵn sàng giám định độc lập',
+          tech.commitments.isOwner && 'Chính chủ cá nhân đứng tên',
+          tech.commitments.maintenanceHistory && 'Lịch sử bảo dưỡng chính hãng',
+          tech.commitments.noAccidentFlood && 'Cam kết không đâm đụng, thủy kích',
+          tech.commitments.readyInspection && 'Sẵn sàng giám định độc lập',
         ]
           .filter(Boolean)
           .join('; ');
 
         const tradeList = [
-          tradeOptions.negotiable && 'Có thương lượng nhẹ cho người mua thiện chí',
-          tradeOptions.tradeSuv && 'Hỗ trợ giao lưu bù trừ với dòng SUV',
+          pricing.tradeOptions.negotiable && 'Có thương lượng nhẹ cho người mua thiện chí',
+          pricing.tradeOptions.tradeSuv && 'Hỗ trợ giao lưu bù trừ với dòng SUV',
           privacyShield && 'Bảo vệ số điện thoại qua eKYC',
         ]
           .filter(Boolean)
@@ -924,14 +716,14 @@ export function useCreateListing() {
           province_code: provinceCode || '79',
           location_address: locationAddress.trim() || undefined,
           description: fullDescription,
-          accident_status: vehicleHistory.accidentStatus,
-          flood_status: vehicleHistory.floodStatus,
-          service_history: vehicleHistory.serviceHistory,
-          owner_count: vehicleHistory.ownerCount || undefined,
-          repainted_parts_count: vehicleHistory.repaintedPartsCount,
-          replaced_parts: vehicleHistory.replacedParts.trim() || undefined,
-          engine_repaired: vehicleHistory.engineRepaired,
-          transmission_repaired: vehicleHistory.transmissionRepaired,
+          accident_status: tech.vehicleHistory.accidentStatus,
+          flood_status: tech.vehicleHistory.floodStatus,
+          service_history: tech.vehicleHistory.serviceHistory,
+          owner_count: tech.vehicleHistory.ownerCount || undefined,
+          repainted_parts_count: tech.vehicleHistory.repaintedPartsCount,
+          replaced_parts: tech.vehicleHistory.replacedParts.trim() || undefined,
+          engine_repaired: tech.vehicleHistory.engineRepaired,
+          transmission_repaired: tech.vehicleHistory.transmissionRepaired,
           media: mediaItems,
         };
 
@@ -940,7 +732,6 @@ export function useCreateListing() {
         let finalStatus = res?.data?.status || null;
         setCreatedListingId(newListingId);
 
-        // Đảm bảo tin được gửi thẳng tới hàng chờ duyệt nếu chưa được xuất bản
         if (newListingId && res?.data?.status === 'DRAFT') {
           const submitRes = await api.submitListingForReview(newListingId).catch(() => null);
           if (submitRes?.data?.status) {
@@ -965,11 +756,10 @@ export function useCreateListing() {
       brandName,
       modelName,
       bodyType,
-      uploadedPhotosList,
       transmission,
       powertrain,
       odometerKm,
-      priceVnd,
+      pricing.priceVnd,
       trim,
       manufactureYear,
       condition,
@@ -979,9 +769,9 @@ export function useCreateListing() {
       seats,
       doors,
       description,
-      commitments,
-      vehicleHistory,
-      tradeOptions,
+      tech.commitments,
+      tech.vehicleHistory,
+      pricing.tradeOptions,
       privacyShield,
       coordinates,
       locationAddress,
@@ -992,6 +782,7 @@ export function useCreateListing() {
       showroomName,
       showroomPhone,
       showroomId,
+      photos.allPhotosWithLabels,
     ]
   );
 
@@ -1004,7 +795,7 @@ export function useCreateListing() {
     // Validation
     errors,
     errorMessage,
-    // Seller Type (Cá nhân vs Showroom/Tổ chức)
+    // Seller Type
     sellerType,
     setSellerType,
     showroomName,
@@ -1041,7 +832,7 @@ export function useCreateListing() {
     setLocationAddress,
     coordinates,
     setCoordinates,
-    // Step 2 (Comprehensive Technical Specifications)
+    // Step 2
     condition,
     setCondition: handleConditionChange,
     handleConditionChange,
@@ -1072,32 +863,33 @@ export function useCreateListing() {
     setInteriorColor,
     description,
     setDescription,
-    commitments,
-    toggleCommitment,
-    vehicleHistory,
-    updateVehicleHistory,
-    // Step 3 (8 Guided Core Slots)
-    slotPhotos,
-    handleSlotPhotoUpload,
-    removeSlotPhoto,
-    extraPhotos,
-    handleExtraPhotosUpload,
-    removeExtraPhoto,
-    uploadedPhotosCount: uploadedPhotosList.length,
-    // Step 4
-    priceVnd,
-    setPriceVnd,
-    tradeOptions,
-    toggleTradeOption,
-    aiLoading,
-    aiPriceSuggestion,
-    aiIntervalLow,
-    aiIntervalHigh,
-    aiConfidence,
-    aiEstimateNote,
-    aiError,
-    handleGetAIEstimate,
-    handleApplyAiPrice,
+    commitments: tech.commitments,
+    toggleCommitment: tech.toggleCommitment,
+    vehicleHistory: tech.vehicleHistory,
+    updateVehicleHistory: tech.updateVehicleHistory,
+    // Step 3 (Photos)
+    slotPhotos: photos.slotPhotos,
+    handleSlotPhotoUpload: photos.handleSlotPhotoUpload,
+    removeSlotPhoto: photos.removeSlotPhoto,
+    extraPhotos: photos.extraPhotos,
+    handleExtraPhotosUpload: photos.handleExtraPhotosUpload,
+    removeExtraPhoto: photos.removeExtraPhoto,
+    uploadedPhotosCount: photos.uploadedPhotosCount,
+    // Step 4 (Pricing & AI Valuation)
+    priceVnd: pricing.priceVnd,
+    setPriceVnd: pricing.setPriceVnd,
+    tradeOptions: pricing.tradeOptions,
+    toggleTradeOption: pricing.toggleTradeOption,
+    aiLoading: pricing.aiLoading,
+    aiPriceSuggestion: pricing.aiPriceSuggestion,
+    aiIntervalLow: pricing.aiIntervalLow,
+    aiIntervalHigh: pricing.aiIntervalHigh,
+    aiConfidence: pricing.aiConfidence,
+    aiEstimateNote: pricing.aiEstimateNote,
+    aiError: pricing.aiError,
+    aiValuationResult: pricing.aiValuationResult,
+    handleGetAIEstimate: pricing.handleGetAIEstimate,
+    handleApplyAiPrice: pricing.handleApplyAiPrice,
     // Step 5
     privacyShield,
     setPrivacyShield,

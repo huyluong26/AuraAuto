@@ -218,45 +218,45 @@ export default function PromoteListingModal({
                   <div
                     key={pkg.code}
                     onClick={() => setSelectedCode(pkg.code)}
-                    className={`relative p-4 rounded-2xl border-2 transition-all cursor-pointer flex flex-col justify-between gap-3 ${
+                    className={`relative p-4 rounded-xl border transition-all cursor-pointer flex flex-col justify-between gap-3 ${
                       isSelected
-                        ? 'border-secondary bg-secondary-container/15 shadow-sm ring-1 ring-secondary/30'
-                        : 'border-surface-container-high hover:border-outline-variant bg-surface-container-lowest'
+                        ? 'border-[#8c6d3b] bg-[#faf8f4] shadow-xs ring-1 ring-[#8c6d3b]/40'
+                        : 'border-[#e8e6e1] hover:border-[#b89b72]/60 bg-white'
                     }`}
                   >
                     <div>
                       <div className="flex items-center justify-between gap-2 mb-1.5">
                         <div className="flex items-center gap-2">
-                          <span className="font-bold text-sm text-primary">{pkg.name}</span>
+                          <span className="font-bold text-sm text-[#111827]">{pkg.name}</span>
                           {pkg.badge && (
-                            <span className="px-2 py-0.5 rounded-full bg-secondary-container text-on-secondary-container text-[10px] font-bold uppercase tracking-wider border border-secondary/20">
+                            <span className="px-2 py-0.5 rounded-full bg-[#1c1a17] text-[#e5c78a] border border-[#8c6d3b]/40 text-[9px] font-bold uppercase tracking-wider">
                               {pkg.badge}
                             </span>
                           )}
                         </div>
                         <span
                           className={`material-symbols-outlined text-[20px] shrink-0 ${
-                            isSelected ? 'text-secondary font-bold' : 'text-outline-variant'
+                            isSelected ? 'text-[#8c6d3b] font-bold' : 'text-[#d1d5db]'
                           }`}
                         >
                           {isSelected ? 'radio_button_checked' : 'radio_button_unchecked'}
                         </span>
                       </div>
-                      <p className="text-xs text-on-surface-variant leading-relaxed">
+                      <p className="text-xs text-[#6b7280] leading-relaxed">
                         {pkg.description}
                       </p>
                     </div>
 
-                    <div className="pt-2.5 border-t border-surface-container-high flex items-baseline justify-between">
-                      <span className="text-[11px] text-on-surface-variant">
+                    <div className="pt-2.5 border-t border-[#f0ede6] flex items-baseline justify-between">
+                      <span className="text-[11px] text-[#6b7280]">
                         Chi phí trọn gói:
                       </span>
                       <div className="text-right">
-                        <span className="text-base font-extrabold text-secondary block font-headline">
+                        <span className="text-base font-extrabold text-[#111827] block font-headline">
                           {formatVND(pkg.amount_vnd)}
                         </span>
                         {pkg.days > 1 && (
-                          <span className="text-[10px] text-on-surface-variant block">
+                          <span className="text-[10px] text-[#8c6d3b] block font-medium">
                             ~ {dailyRate.toLocaleString('vi-VN')} ₫ / ngày
                           </span>
                         )}
@@ -371,7 +371,7 @@ export default function PromoteListingModal({
               type="button"
               onClick={handleClose}
               disabled={loading}
-              className="px-4 py-2.5 rounded-xl border border-surface-container-high text-sm font-semibold text-on-surface hover:bg-surface-container transition-colors w-1/2 sm:w-auto cursor-pointer"
+              className="px-4 py-2 rounded-lg border border-[#d8d6d0] bg-white text-xs sm:text-sm font-medium text-[#334155] hover:bg-[#faf9f6] transition-colors w-1/2 sm:w-auto cursor-pointer shadow-2xs active:scale-[0.99]"
             >
               Hủy bỏ
             </button>
@@ -379,16 +379,16 @@ export default function PromoteListingModal({
               type="button"
               onClick={handlePayment}
               disabled={loading}
-              className="px-6 py-2.5 rounded-xl bg-secondary hover:bg-on-secondary-fixed text-on-secondary text-sm font-bold shadow-md inline-flex items-center justify-center gap-2 transition-all cursor-pointer w-1/2 sm:w-auto disabled:opacity-50"
+              className="px-5 py-2 rounded-lg bg-[#0f172a] hover:bg-black text-[#faf9f6] border border-neutral-800 text-xs sm:text-sm font-medium inline-flex items-center justify-center gap-2 transition-all cursor-pointer w-1/2 sm:w-auto disabled:opacity-50 shadow-xs active:scale-[0.99]"
             >
               {loading ? (
                 <>
-                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  <div className="w-4 h-4 border-2 border-[#e5c78a] border-t-transparent rounded-full animate-spin" />
                   <span>Đang kết nối VNPAY...</span>
                 </>
               ) : (
                 <>
-                  <span className="material-symbols-outlined text-[18px]">lock</span>
+                  <span className="material-symbols-outlined text-[17px] text-[#e5c78a]">lock</span>
                   <span>Thanh toán qua VNPAY</span>
                 </>
               )}

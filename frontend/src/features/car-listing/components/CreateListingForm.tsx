@@ -149,6 +149,7 @@ export function CreateListingForm() {
             aiConfidence={listingState.aiConfidence}
             aiEstimateNote={listingState.aiEstimateNote}
             aiError={listingState.aiError}
+            aiValuationResult={listingState.aiValuationResult}
             onGetAIEstimate={listingState.handleGetAIEstimate}
             onApplyAiPrice={listingState.handleApplyAiPrice}
             error={listingState.errors.price}
@@ -184,7 +185,11 @@ export function CreateListingForm() {
             description={listingState.description}
             commitments={listingState.commitments}
             vehicleHistory={listingState.vehicleHistory}
-            primaryPhotoPreview={listingState.slotPhotos.front?.previewUrl}
+            primaryPhotoPreview={
+              listingState.slotPhotos.front?.previewUrl ||
+              Object.values(listingState.slotPhotos).find(Boolean)?.previewUrl ||
+              listingState.extraPhotos[0]?.previewUrl
+            }
             totalPhotosCount={listingState.uploadedPhotosCount}
             priceVnd={listingState.priceVnd}
             tradeOptions={listingState.tradeOptions}

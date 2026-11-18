@@ -56,82 +56,25 @@ export interface QuickListingData {
   vehicleHistory?: VehicleHistoryState;
 }
 
-export function normalizeAccidentStatus(val?: string): 'UNKNOWN' | 'NONE' | 'MINOR' | 'MAJOR' {
-  if (!val) return 'UNKNOWN';
-  const u = val.trim().toUpperCase();
-  if (['UNKNOWN', 'NONE', 'MINOR', 'MAJOR'].includes(u)) return u as any;
-  const l = val.toLowerCase();
-  if (l.includes('chưa từng') || l.includes('không') || l.includes('chưa va') || l.includes('nguyên bản') || l.includes('zin') || l.includes('none')) return 'NONE';
-  if (l.includes('nhẹ') || l.includes('xước') || l.includes('quẹt') || l.includes('sát') || l.includes('minor')) return 'MINOR';
-  if (l.includes('nặng') || l.includes('khung gầm') || l.includes('tai nạn') || l.includes('ảnh hưởng') || l.includes('major')) return 'MAJOR';
-  return 'UNKNOWN';
-}
+import {
+  normalizeAccidentStatus,
+  normalizeFloodStatus,
+  normalizeServiceHistory,
+  normalizeIntCount,
+  normalizeBodyType,
+  normalizeFuelType,
+  normalizeTransmission,
+} from '@/features/car-listing/utils/normalizers';
 
-export function normalizeFloodStatus(val?: string): 'UNKNOWN' | 'NONE' | 'SUSPECTED' | 'CONFIRMED' {
-  if (!val) return 'UNKNOWN';
-  const u = val.trim().toUpperCase();
-  if (['UNKNOWN', 'NONE', 'SUSPECTED', 'CONFIRMED'].includes(u)) return u as any;
-  const l = val.toLowerCase();
-  if (l.includes('không') || l.includes('cam kết') || l.includes('chưa từng') || l.includes('zin') || l.includes('none')) return 'NONE';
-  if (l.includes('nghi ngờ') || l.includes('dấu hiệu') || l.includes('suspect')) return 'SUSPECTED';
-  if (l.includes('ngập') || l.includes('thủy kích') || l.includes('confirmed')) return 'CONFIRMED';
-  return 'UNKNOWN';
-}
-
-export function normalizeServiceHistory(val?: string): 'UNKNOWN' | 'NONE' | 'PARTIAL' | 'FULL' {
-  if (!val) return 'UNKNOWN';
-  const u = val.trim().toUpperCase();
-  if (['UNKNOWN', 'NONE', 'PARTIAL', 'FULL'].includes(u)) return u as any;
-  const l = val.toLowerCase();
-  if (l.includes('đầy đủ') || l.includes('100%') || l.includes('hãng') || l.includes('full')) return 'FULL';
-  if (l.includes('một phần') || l.includes('vài') || l.includes('sổ theo dõi') || l.includes('partial')) return 'PARTIAL';
-  if (l.includes('không có') || l.includes('mất') || l.includes('chưa rõ') || l.includes('none')) return 'NONE';
-  return 'UNKNOWN';
-}
-
-export function normalizeIntCount(val?: any, minVal = 0, maxVal = 50): number | undefined {
-  if (val === undefined || val === null || val === '') return undefined;
-  if (typeof val === 'number') {
-    if (isNaN(val)) return undefined;
-    return Math.max(minVal, Math.min(maxVal, Math.round(val)));
-  }
-  const match = String(val).match(/\d+/);
-  if (match) {
-    const parsed = parseInt(match[0], 10);
-    return Math.max(minVal, Math.min(maxVal, parsed));
-  }
-  return undefined;
-}
-
-export function normalizeBodyType(val?: string): string {
-  if (!val) return 'SEDAN';
-  const u = val.trim().toUpperCase();
-  if (u.includes('GẦM CAO') || u.includes('SUV')) return 'SUV';
-  if (u.includes('BÁN TẢI') || u.includes('PICKUP')) return 'PICKUP';
-  if (u.includes('HATCHBACK')) return 'HATCHBACK';
-  if (u.includes('MPV') || u.includes('ĐA DỤNG')) return 'MPV';
-  if (u.includes('CROSSOVER') || u.includes('CUV')) return 'CROSSOVER';
-  if (u.includes('MUI TRẦN') || u.includes('CONVERTIBLE')) return 'CONVERTIBLE';
-  if (u.includes('COUPE')) return 'COUPE';
-  return u;
-}
-
-export function normalizeFuelType(val?: string): string {
-  if (!val) return 'GASOLINE';
-  const u = val.trim().toUpperCase();
-  if (u.includes('XĂNG') || u.includes('GAS')) return 'GASOLINE';
-  if (u.includes('DẦU') || u.includes('DIESEL')) return 'DIESEL';
-  if (u.includes('ĐIỆN') || u.includes('ELECTRIC')) return 'ELECTRIC';
-  if (u.includes('HYBRID')) return 'HYBRID';
-  return u;
-}
-
-export function normalizeTransmission(val?: string): string {
-  if (!val) return 'AUTOMATIC';
-  const u = val.trim().toUpperCase();
-  if (u.includes('SÀN') || u.includes('MANUAL')) return 'MANUAL';
-  return 'AUTOMATIC';
-}
+export {
+  normalizeAccidentStatus,
+  normalizeFloodStatus,
+  normalizeServiceHistory,
+  normalizeIntCount,
+  normalizeBodyType,
+  normalizeFuelType,
+  normalizeTransmission,
+};
 
 interface QuickListingModalProps {
   isOpen: boolean;
@@ -199,34 +142,41 @@ export function QuickListingModal({
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [createdListingId, setCreatedListingId] = useState<string | null>(null);
 
-  // Sync previews whenever initialFiles change (e.g. from AI scan in valuation card)
-  useEffect(() => {
-    if (initialFiles && initialFiles.length > 0) {
-      const keys = GUIDED_PHOTO_SLOTS.map((s) => s.key);
-      const newSlots: Record<string, { file: File; previewUrl: string } | null> = {
-        front: null,
-        front_34: null,
-        rear: null,
-        cockpit: null,
-        odo: null,
-        seats: null,
-        engine: null,
-        inspection_sticker: null,
-      };
-      const newExtra: { file: File; previewUrl: string }[] = [];
+  // Sync previews once when modal is opened from initialFiles (e.g. from AI scan in valuation card)
+  const hasInitializedRef = useRef(false);
 
-      initialFiles.forEach((file, idx) => {
-        const previewUrl = URL.createObjectURL(file);
-        if (idx < keys.length) {
-          newSlots[keys[idx]] = { file, previewUrl };
-        } else {
-          newExtra.push({ file, previewUrl });
-        }
-      });
-      setSlotPhotos(newSlots);
-      setExtraPhotos(newExtra);
+  useEffect(() => {
+    if (isOpen && !hasInitializedRef.current) {
+      hasInitializedRef.current = true;
+      if (initialFiles && initialFiles.length > 0) {
+        const keys = GUIDED_PHOTO_SLOTS.map((s) => s.key);
+        const newSlots: Record<string, { file: File; previewUrl: string } | null> = {
+          front: null,
+          front_34: null,
+          rear: null,
+          cockpit: null,
+          odo: null,
+          seats: null,
+          engine: null,
+          inspection_sticker: null,
+        };
+        const newExtra: { file: File; previewUrl: string }[] = [];
+
+        initialFiles.forEach((file, idx) => {
+          const previewUrl = URL.createObjectURL(file);
+          if (idx < keys.length) {
+            newSlots[keys[idx]] = { file, previewUrl };
+          } else {
+            newExtra.push({ file, previewUrl });
+          }
+        });
+        setSlotPhotos(newSlots);
+        setExtraPhotos(newExtra);
+      }
+    } else if (!isOpen) {
+      hasInitializedRef.current = false;
     }
-  }, [initialFiles]);
+  }, [isOpen, initialFiles]);
 
   const activeSlotPhotosList = useMemo(() => {
     return GUIDED_PHOTO_SLOTS.map((slot) => {
@@ -267,7 +217,6 @@ export function QuickListingModal({
         ...prev,
         [slotKey]: { file, previewUrl },
       }));
-      if (onAddFiles) onAddFiles([file]);
       e.target.value = '';
     }
   };
@@ -304,7 +253,6 @@ export function QuickListingModal({
 
         return nextSlots;
       });
-      if (onAddFiles) onAddFiles(incoming);
       e.target.value = '';
     }
   };
@@ -315,7 +263,6 @@ export function QuickListingModal({
         .filter((f) => f.type.startsWith('image/'))
         .map((file) => ({ file, previewUrl: URL.createObjectURL(file) }));
       setExtraPhotos((prev) => [...prev, ...newItems].slice(0, 10));
-      if (onAddFiles) onAddFiles(newItems.map((item) => item.file));
       e.target.value = '';
     }
   };

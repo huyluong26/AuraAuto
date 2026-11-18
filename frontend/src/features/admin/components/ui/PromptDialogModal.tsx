@@ -64,21 +64,21 @@ export function PromptDialogModal({
       case 'danger':
         return {
           icon: 'report_problem',
-          iconBg: 'bg-red-50 text-red-600 border border-red-200',
-          btnBg: 'bg-red-600 hover:bg-red-700 text-white shadow-xs',
+          iconBg: 'bg-rose-50 text-rose-600 border border-rose-200',
+          btnBg: 'bg-[#dc2626] hover:bg-[#b91c1c] text-white shadow-2xs',
         };
       case 'warning':
         return {
           icon: 'warning',
-          iconBg: 'bg-amber-50 text-amber-600 border border-amber-200',
-          btnBg: 'bg-amber-600 hover:bg-amber-700 text-white shadow-xs',
+          iconBg: 'bg-amber-50 text-amber-700 border border-amber-200',
+          btnBg: 'bg-amber-600 hover:bg-amber-700 text-white shadow-2xs',
         };
       case 'primary':
       default:
         return {
           icon: 'edit_note',
-          iconBg: 'bg-secondary-container/50 text-secondary border border-secondary/20',
-          btnBg: 'bg-primary hover:bg-primary/90 text-on-primary shadow-xs',
+          iconBg: 'bg-[#fcf9f2] text-[#8c6d3b] border border-[#d8c5a2]',
+          btnBg: 'bg-[#0f172a] hover:bg-black text-white border border-neutral-800 shadow-2xs',
         };
     }
   };
@@ -87,24 +87,24 @@ export function PromptDialogModal({
 
   return (
     <div
-      className="fixed inset-0 z-[10000] flex items-center justify-center p-4 bg-primary/60 backdrop-blur-sm animate-in fade-in duration-200"
+      className="fixed inset-0 z-[10000] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md animate-in fade-in duration-200"
       onClick={onCancel}
     >
       <div
-        className="w-full max-w-lg bg-surface-container-lowest rounded-2xl border border-surface-container-high shadow-2xl p-6 relative overflow-hidden animate-in zoom-in-95 duration-150"
+        className="w-full max-w-lg bg-white rounded-2xl border border-[#e8e6e1] shadow-[0_24px_60px_rgba(0,0,0,0.18)] p-6 relative overflow-hidden animate-in zoom-in-95 duration-150"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-start gap-4">
-          <div className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 ${style.iconBg}`}>
-            <span className="material-symbols-outlined text-[26px]">{style.icon}</span>
+          <div className={`w-11 h-11 rounded-xl flex items-center justify-center shrink-0 ${style.iconBg}`}>
+            <span className="material-symbols-outlined text-[24px]">{style.icon}</span>
           </div>
 
           <div className="flex-1 min-w-0">
-            <h3 className="font-headline-sm text-headline-sm font-semibold text-primary leading-tight">
+            <h3 className="text-base font-bold text-[#111827] leading-tight font-headline">
               {title}
             </h3>
             {message && (
-              <p className="mt-1 text-on-surface-variant font-body-sm text-[13px] leading-relaxed">
+              <p className="mt-1 text-[#4b5563] text-xs sm:text-[13px] leading-relaxed">
                 {message}
               </p>
             )}
@@ -115,7 +115,7 @@ export function PromptDialogModal({
           {/* Quick Suggestions Chips */}
           {suggestions.length > 0 && (
             <div className="space-y-1.5">
-              <span className="font-label-sm text-[11px] font-semibold text-outline uppercase tracking-wider">
+              <span className="text-[11px] font-semibold text-[#888] uppercase tracking-wider">
                 Gợi ý lý do nhanh:
               </span>
               <div className="flex flex-wrap gap-1.5">
@@ -126,8 +126,8 @@ export function PromptDialogModal({
                     onClick={() => handleSelectSuggestion(s)}
                     className={`text-[12px] px-2.5 py-1 rounded-lg border transition-all text-left cursor-pointer ${
                       value === s
-                        ? 'bg-secondary-container text-on-secondary-container border-secondary font-semibold'
-                        : 'bg-surface-container-low border-surface-container-high text-on-surface hover:border-secondary/50'
+                        ? 'bg-[#1c1a17] text-[#e5c78a] border-[#8c6d3b]/50 font-semibold'
+                        : 'bg-[#faf9f6] border-[#e8e6e1] text-[#374151] hover:border-[#b89b72]'
                     }`}
                   >
                     {s}
@@ -145,26 +145,26 @@ export function PromptDialogModal({
               placeholder={placeholder}
               rows={3}
               autoFocus
-              className="w-full rounded-xl border border-surface-container-high bg-surface-container-lowest p-3 font-body-md text-sm text-on-surface placeholder:text-outline focus:outline-none focus:border-secondary focus:ring-1 focus:ring-secondary transition-all resize-none"
+              className="w-full rounded-xl border border-[#dcd9d2] bg-white p-3 text-xs sm:text-sm text-[#111827] placeholder:text-[#9ca3af] focus:outline-none focus:border-[#8c6d3b] focus:ring-1 focus:ring-[#8c6d3b]/20 transition-all resize-none shadow-2xs"
             />
-            <div className="text-right text-[11px] text-outline">
+            <div className="text-right text-[11px] text-[#9ca3af]">
               {value.length} ký tự
             </div>
           </div>
 
           {/* Action Buttons */}
-          <div className="flex items-center justify-end gap-3 pt-3 border-t border-surface-container-high">
+          <div className="flex items-center justify-end gap-2 pt-3 border-t border-[#f0ede6]">
             <button
               type="button"
               onClick={onCancel}
-              className="px-4 py-2 rounded-xl border border-surface-container-high bg-surface-container hover:bg-surface-container-highest text-on-surface font-label-md text-label-md font-medium transition-colors cursor-pointer"
+              className="px-3.5 py-1.5 rounded-md border border-[#d8d6d0] bg-white hover:bg-[#faf9f6] text-[#334155] text-xs font-medium transition-colors cursor-pointer shadow-2xs active:scale-[0.99]"
             >
               {cancelText}
             </button>
             <button
               type="submit"
               disabled={!value.trim()}
-              className={`px-5 py-2 rounded-xl font-label-md text-label-md font-semibold transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed ${style.btnBg}`}
+              className={`px-4 py-1.5 rounded-md text-xs font-semibold transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed shadow-2xs active:scale-[0.99] ${style.btnBg}`}
             >
               {confirmText}
             </button>

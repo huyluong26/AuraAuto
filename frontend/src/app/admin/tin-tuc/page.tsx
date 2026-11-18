@@ -165,7 +165,7 @@ export default function AdminArticlesPage() {
           emptyMessage="Chưa có bài viết tin tức nào"
           emptyIcon="newspaper"
           rowActions={(a) => (
-            <div className="flex items-center justify-end gap-1.5">
+            <div className="flex items-center justify-end gap-1">
               <button
                 type="button"
                 onClick={() => {
@@ -173,9 +173,9 @@ export default function AdminArticlesPage() {
                   setShowEditorModal(true);
                 }}
                 title="Chỉnh sửa bài viết & hình ảnh"
-                className="p-1.5 rounded-lg text-outline hover:text-secondary hover:bg-secondary-container/30 border border-surface-container-high transition-colors cursor-pointer"
+                className="w-6 h-6 rounded-md flex items-center justify-center bg-white hover:bg-slate-100 border border-[#d8d6d0] hover:border-slate-400 text-[#475569] hover:text-[#0f172a] active:scale-[0.98] transition-all cursor-pointer"
               >
-                <span className="material-symbols-outlined text-[17px]">edit_note</span>
+                <span className="material-symbols-outlined text-[13px]">edit_note</span>
               </button>
 
               {a.status !== 'PUBLISHED' && (
@@ -183,9 +183,9 @@ export default function AdminArticlesPage() {
                   type="button"
                   onClick={() => handleApproveArticle(a.id, a.title)}
                   title="Phê duyệt bài viết"
-                  className="p-1.5 rounded-lg text-emerald-600 hover:bg-emerald-50 border border-emerald-200 transition-colors cursor-pointer"
+                  className="w-6 h-6 rounded-md flex items-center justify-center bg-emerald-50 hover:bg-emerald-100 border border-emerald-300 hover:border-emerald-500 text-emerald-700 active:scale-[0.98] transition-all cursor-pointer"
                 >
-                  <span className="material-symbols-outlined text-[17px]">check_circle</span>
+                  <span className="material-symbols-outlined text-[13px]">check_circle</span>
                 </button>
               )}
 
@@ -194,9 +194,9 @@ export default function AdminArticlesPage() {
                   href={`/tin-tuc/${a.slug}`}
                   target="_blank"
                   title="Xem bài viết công khai"
-                  className="p-1.5 rounded-lg text-outline hover:text-primary hover:bg-surface-container-high border border-surface-container-high transition-colors"
+                  className="w-6 h-6 rounded-md flex items-center justify-center bg-white hover:bg-slate-100 border border-[#d8d6d0] hover:border-slate-400 text-[#475569] hover:text-[#0f172a] active:scale-[0.98] transition-all cursor-pointer"
                 >
-                  <span className="material-symbols-outlined text-[17px]">open_in_new</span>
+                  <span className="material-symbols-outlined text-[13px]">open_in_new</span>
                 </Link>
               )}
 
@@ -204,9 +204,9 @@ export default function AdminArticlesPage() {
                 type="button"
                 onClick={() => handleDeleteArticle(a.id, a.title)}
                 title="Xóa bài viết"
-                className="p-1.5 rounded-lg text-outline hover:text-red-600 hover:bg-red-50 border border-surface-container-high transition-colors cursor-pointer"
+                className="w-6 h-6 rounded-md flex items-center justify-center bg-white hover:bg-rose-50 border border-rose-200 hover:border-rose-300 text-rose-600 hover:text-rose-700 active:scale-[0.98] transition-all cursor-pointer"
               >
-                <span className="material-symbols-outlined text-[17px]">delete_forever</span>
+                <span className="material-symbols-outlined text-[13px]">delete_forever</span>
               </button>
             </div>
           )}

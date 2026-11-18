@@ -18,6 +18,7 @@ from app.models.user import User
 from app.modules.ai.schemas import (
     ValuationRequest,
     ValuationResponse,
+    ValuationBreakdownItem,
     NaturalSearchRequest,
     NaturalSearchResponse,
     ExtractedCriteria,
@@ -30,157 +31,18 @@ from app.modules.ai.gemini_client import gemini_client
 from app.modules.listings.schemas import ListingListItemResponse
 from ml_training.preprocess import extract_variant
 
-# Global CatBoost Model & Metadata Singleton
-_catboost_model = None
-_conformal_rel_ratio = 0.2134  # Relative 80% conformal coverage from evaluation report (21.34%)
-_optimized_model = None
-_optimized_report = None
+from app.modules.ai.valuation_engine import (
+    get_optimized_artifacts as _get_optimized_artifacts,
+    get_catboost_model as _get_catboost_model,
+    normalize_brand_and_model as _normalize_brand_and_model,
+    resolve_valuation_support as _resolve_valuation_support,
+    infer_specs as _infer_specs,
+    calculate_condition_adjustments as _calculate_condition_adjustments,
+    get_conformal_rel_ratio,
+    LUXURY_BRANDS,
+)
 
-
-def _get_optimized_artifacts(version: str = "v3"):
-    global _optimized_model, _optimized_report
-    if _optimized_model is None or _optimized_report is None:
-        import catboost as cb
-        from pathlib import Path
-        base = Path(__file__).resolve().parents[3] / "ml_training" / "artifacts"
-        model_file = base / f"catboost_log_price_{version}.cbm"
-        report_file = base / f"evaluation_report_{version}.json"
-        if not model_file.exists() or not report_file.exists():
-            model_file = base / "catboost_log_price_v3.cbm"
-            report_file = base / "evaluation_report_v3.json"
-        model = cb.CatBoostRegressor()
-        model.load_model(str(model_file))
-        report = json.loads(report_file.read_text(encoding="utf-8"))
-        _optimized_model, _optimized_report = model, report
-    return _optimized_model, _optimized_report
-
-def _get_catboost_model():
-    global _catboost_model, _conformal_rel_ratio
-    if _catboost_model is None:
-        try:
-            import catboost as cb
-            # Check model paths
-            model_paths = [
-                os.path.join(os.getcwd(), "ml_training", "artifacts", "catboost_used_cars.cbm"),
-                os.path.join(os.getcwd(), "backend", "ml_training", "artifacts", "catboost_used_cars.cbm"),
-                "/app/ml_training/artifacts/catboost_used_cars.cbm",
-            ]
-            for p in model_paths:
-                if os.path.exists(p):
-                    model = cb.CatBoostRegressor()
-                    model.load_model(p)
-                    _catboost_model = model
-                    break
-
-            # Load report metadata if present
-            report_paths = [
-                os.path.join(os.getcwd(), "ml_training", "artifacts", "evaluation_report.json"),
-                os.path.join(os.getcwd(), "backend", "ml_training", "artifacts", "evaluation_report.json"),
-                "/app/ml_training/artifacts/evaluation_report.json",
-            ]
-            for rp in report_paths:
-                if os.path.exists(rp):
-                    with open(rp, "r", encoding="utf-8") as f:
-                        data = json.load(f)
-                        calib = data.get("conformal_calibration", {})
-                        if "q90_relative_ratio" in calib:
-                            _conformal_rel_ratio = float(calib["q90_relative_ratio"])
-                    break
-        except Exception:
-            _catboost_model = None
-    return _catboost_model
-
-
-def _normalize_brand_and_model(brand_input: str, model_input: str) -> Tuple[str, str]:
-    try:
-        from ml_training.preprocess import normalize_brand, extract_model
-        b = normalize_brand(brand_input)
-        # The UI may send either "CX-5" or "Mazda CX-5".
-        # extract_model already removes the brand prefix when it is present.
-        m = extract_model(b, model_input)
-        return b, m
-    except Exception:
-        # Fallback if ml_training not directly importable
-        b = (brand_input or "Other").strip().title()
-        if "mercedes" in b.lower():
-            b = "Mercedes-Benz"
-        m = (model_input or "Other").strip().title()
-        return b, m
-
-
-def _resolve_valuation_support(report: dict, brand: str, model: str) -> Tuple[dict, str]:
-    """Use the narrowest available reference group without refusing a valuation."""
-    groups = report["support_by_brand_model"]
-    exact = groups.get(f"{brand}|{model}")
-    if exact:
-        return exact, "EXACT" if exact["count"] >= 10 else "SPARSE"
-
-    brand_groups = [value for key, value in groups.items() if key.startswith(f"{brand}|")]
-    candidates = brand_groups or list(groups.values())
-    level = "BRAND" if brand_groups else "GLOBAL"
-    total = sum(item["count"] for item in candidates)
-
-    def weighted_average(field: str) -> float:
-        return sum(item[field] * item["count"] for item in candidates) / total
-
-    return {
-        "count": total,
-        "min_year": min(item["min_year"] for item in candidates),
-        "max_year": max(item["max_year"] for item in candidates),
-        "max_odo": max(item["max_odo"] for item in candidates),
-        "median_engine": weighted_average("median_engine"),
-        "median_price_million": weighted_average("median_price_million"),
-    }, level
-
-
-def _infer_specs(brand_norm: str, model_norm: str, body_type: str, user_disp: Optional[float], user_imported: Optional[int], origin: Optional[str]) -> Tuple[float, int]:
-    # 1. Engine displacement
-    disp = user_disp
-    if not disp or disp <= 0.5:
-        m = model_norm.lower()
-        if any(k in m for k in ["morning", "i10", "fadil", "wigo", "brio", "spark", "matiz"]):
-            disp = 1.2
-        elif any(k in m for k in ["vios", "accent", "city", "soluto", "yaris", "raize", "mazda 2", "attrage", "almera"]):
-            disp = 1.5
-        elif any(k in m for k in ["civic", "corolla altis", "elantra", "k3", "cerato", "mazda 3", "lux a"]):
-            disp = 1.8
-        elif any(k in m for k in ["camry", "k5", "mazda 6", "accord", "sonata"]):
-            disp = 2.5
-        elif any(k in m for k in ["cx-5", "tucson", "sportage", "cr-v", "c-class", "glc", "3 series", "x3", "q5"]):
-            disp = 2.0
-        elif any(k in m for k in ["santafe", "sorento", "everest", "ranger", "carnival", "sedona", "fortuner", "hilux", "triton"]):
-            disp = 2.2
-        elif any(k in m for k in ["prado", "explorer", "rx", "gle", "e-class", "5 series"]):
-            disp = 2.7
-        elif any(k in m for k in ["land cruiser", "lx", "gls", "s-class", "7 series", "cayenne", "range rover"]):
-            disp = 4.0
-        elif body_type in ["HATCHBACK"]:
-            disp = 1.2
-        elif body_type in ["SEDAN"]:
-            disp = 1.6
-        elif body_type in ["SUV", "PICKUP", "MPV"]:
-            disp = 2.2
-        else:
-            disp = 2.0
-
-    # 2. Origin / Imported status
-    if user_imported is not None:
-        imported = 1 if user_imported else 0
-    elif origin and "nhập" in origin.lower():
-        imported = 1
-    elif origin and ("lắp ráp" in origin.lower() or "trong nước" in origin.lower()):
-        imported = 0
-    else:
-        m = model_norm.lower()
-        b = brand_norm.lower()
-        if b in ["lexus", "porsche", "audi", "land rover", "volvo", "rolls-royce", "bentley", "ferrari"]:
-            imported = 1
-        elif any(k in m for k in ["land cruiser", "alphard", "prado", "raize", "everest", "explorer", "ranger raptor", "camry"]):
-            imported = 1
-        else:
-            imported = 0
-
-    return float(disp), imported
+_conformal_rel_ratio = get_conformal_rel_ratio()
 
 
 class AIService:
@@ -254,6 +116,21 @@ class AIService:
 
             pred_raw = await asyncio.to_thread(_run_prediction)
             pred_million = max(50.0, pred_raw)  # min 50tr
+
+            # Hiệu chỉnh phân khúc xe hạng sang & Option cao cấp (Luxury Tier & Trim Calibration)
+            is_luxury = brand_norm.lower() in LUXURY_BRANDS
+            trim_raw = f"{req.model} {req.variant or ''}".lower()
+            luxury_trim_bonus = 0.0
+            if any(t in trim_raw for t in ["amg", "maybach", "m-sport", "m sport", "gts", "turbo s", "turbo", "autobiography", "sv"]):
+                luxury_trim_bonus = 0.20  # Bản hiệu năng cao/siêu sang: +20%
+            elif any(t in trim_raw for t in ["f-sport", "f sport", "s-line", "s line", "cross country", "ultra luxury", "executive", "lwb"]):
+                luxury_trim_bonus = 0.10  # Bản trang bị tiện nghi cao: +10%
+
+            if is_luxury:
+                # Bù đắp độ sụt giảm giá phi tuyến tính cho xe sang lướt
+                luxury_age_factor = 1.15 if age <= 3 else (1.08 if age <= 6 else 1.0)
+                pred_million = pred_million * (1.0 + luxury_trim_bonus) * luxury_age_factor
+
             estimated_val = int(round(pred_million * 1_000_000 / 5_000_000) * 5_000_000)
 
             # Proportional Conformal calibration interval (+/- q80 relative ratio)
@@ -275,6 +152,46 @@ class AIService:
 
         ml_estimated_val = estimated_val
         market = None
+
+        # Kích hoạt Dynamic Market Grounding (Gemini Live Search) đối với xe sang / giá trị cao
+        if (pred_million >= 1200 or is_luxury or support_level in ("SPARSE", "BRAND", "GLOBAL")) and getattr(gemini_client, "api_key", None):
+            try:
+                prov_name = "Hà Nội" if req.province_code == "01" else ("TP.HCM" if req.province_code == "79" else "Việt Nam")
+                market = await asyncio.wait_for(
+                    gemini_client.research_market_valuation(
+                        brand=req.brand,
+                        model=req.model,
+                        variant=req.variant,
+                        year=req.manufacture_year,
+                        odometer_km=req.odometer_km,
+                        province=prov_name,
+                        ml_price_vnd=ml_estimated_val,
+                    ),
+                    timeout=5.0,
+                )
+            except Exception as e:
+                logger.debug(f"Gemini market research skipped: {e}")
+                market = None
+
+        if market and market.comparable_count >= 2 and market.median_price_vnd > 0:
+            ml_weight = 0.35 if is_luxury else 0.50
+            market_weight = 1.0 - ml_weight
+            pred_million = (pred_million * ml_weight) + ((market.median_price_vnd / 1_000_000) * market_weight)
+            low_million = max(40.0, (market.low_price_vnd / 1_000_000 * 0.7) + (low_million * 0.3))
+            high_million = (market.high_price_vnd / 1_000_000 * 0.7) + (high_million * 0.3)
+
+        # Lưu giá cơ sở thị trường (trước khi trừ tình trạng kỹ thuật)
+        base_price_val = int(round(pred_million * 1_000_000 / 5_000_000) * 5_000_000)
+        base_interval_low = int(round(low_million * 1_000_000 / 5_000_000) * 5_000_000)
+        base_interval_high = int(round(high_million * 1_000_000 / 5_000_000) * 5_000_000)
+
+        # Áp dụng Tầng Thẩm Định Kỹ Thuật (Automotive Appraisal Condition Multiplier)
+        adjusted_val, condition_mult, total_adj_vnd, breakdown_items = _calculate_condition_adjustments(
+            base_price_val, req
+        )
+        interval_low = int(round(base_interval_low * condition_mult / 5_000_000) * 5_000_000)
+        interval_high = int(round(base_interval_high * condition_mult / 5_000_000) * 5_000_000)
+        estimated_val = adjusted_val
 
         # Find similar listings in DB matching brand or model or general published inventory
         similar_stmt = (
@@ -374,11 +291,19 @@ class AIService:
             reason_parts.append("ODO nằm ngoài khoảng dữ liệu tham chiếu.")
         if market:
             reason_parts.append(f"Giá đã được đối chiếu với {market.comparable_count} tin thị trường qua Gemini.")
+        if total_adj_vnd != 0:
+            adj_mil = abs(total_adj_vnd) / 1_000_000
+            verb = "khấu trừ" if total_adj_vnd < 0 else "cộng thêm"
+            reason_parts.append(f"Đã {verb} {adj_mil:,.0f} triệu VNĐ theo kết quả thẩm định kỹ thuật và lịch sử xe.")
 
         return ValuationResponse(
             status="PREDICTED",
             model_version=model_tag,
             estimated_price_vnd=estimated_val,
+            base_price_vnd=base_price_val,
+            condition_multiplier=condition_mult,
+            total_condition_adjustment_vnd=total_adj_vnd,
+            breakdown_items=breakdown_items,
             interval_low_vnd=interval_low,
             interval_high_vnd=interval_high,
             interval_method="EMPIRICAL_RELATIVE_INTERVAL_90PCT" if support_level == "EXACT" and not year_outside_support and not odo_outside_support else "HEURISTIC_WIDENED_INTERVAL",

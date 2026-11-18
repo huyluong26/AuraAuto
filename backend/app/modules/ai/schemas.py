@@ -4,6 +4,15 @@ from pydantic import BaseModel, Field
 from app.modules.listings.schemas import ListingListItemResponse
 
 
+class ValuationBreakdownItem(BaseModel):
+    category: str = Field(description="ACCIDENT, FLOOD, ENGINE, TRANSMISSION, SERVICE, OWNERSHIP, LUXURY_TRIM")
+    label: str = Field(description="Tên hạng mục kiểm định")
+    impact: str = Field(description="GIẢM, TĂNG, hoặc NGUYÊN BẢN")
+    percentage: float = Field(description="Tỷ lệ % điều chỉnh so với giá gốc")
+    amount_vnd: int = Field(description="Số tiền điều chỉnh (VNĐ)")
+    note: str = Field(description="Mô tả lý do chiết khấu hoặc cộng thưởng")
+
+
 class ValuationRequest(BaseModel):
     brand: str = Field(description="Tên hãng xe (vd: Toyota, Mazda)")
     model: str = Field(description="Tên dòng xe (vd: Vios, CX-5)")
@@ -19,6 +28,16 @@ class ValuationRequest(BaseModel):
     doors: Optional[int] = None
     origin: Optional[str] = None
     is_imported: Optional[int] = None
+    condition: Optional[str] = None  # NEW, USED
+    # Các trường kiểm định lịch sử & tình trạng thực tế của xe
+    accident_status: Optional[str] = None  # NONE, MINOR, MODERATE, MAJOR, UNKNOWN
+    flood_status: Optional[str] = None  # NONE, MINOR, SUBMERGED, UNKNOWN
+    service_history: Optional[str] = None  # FULL_DEALER, REGULAR_GARAGE, IRREGULAR, UNKNOWN
+    engine_repaired: Optional[bool] = None  # Đã từng đại tu/rã máy
+    transmission_repaired: Optional[bool] = None  # Đã từng đại tu hộp số
+    owner_count: Optional[int] = None  # Số đời chủ
+    repainted_parts_count: Optional[int] = None  # Số chi tiết sơn lại
+    replaced_parts: Optional[str] = None
 
 
 class GeminiExplanation(BaseModel):
@@ -45,8 +64,12 @@ class GeminiMarketValuation(BaseModel):
 
 class ValuationResponse(BaseModel):
     status: str = "PREDICTED"  # PREDICTED, OUT_OF_SUPPORT, ERROR
-    model_version: str = "CatBoost-v2.0"
+    model_version: str = "CatBoost-v4.0-Appraisal"
     estimated_price_vnd: Optional[int] = None
+    base_price_vnd: Optional[int] = None
+    condition_multiplier: Optional[float] = 1.0
+    total_condition_adjustment_vnd: Optional[int] = 0
+    breakdown_items: List[ValuationBreakdownItem] = []
     interval_low_vnd: Optional[int] = None
     interval_high_vnd: Optional[int] = None
     interval_method: str = "CONFORMAL_RESIDUAL_CALIBRATION"

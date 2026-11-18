@@ -121,13 +121,13 @@ export const PromotionPackagesTab: React.FC<PromotionPackagesTabProps> = ({
                   <button
                     type="button"
                     onClick={() => onToggleActive(pkg)}
-                    className={`text-xs font-semibold px-2.5 py-1 rounded-lg border transition-colors cursor-pointer flex items-center gap-1 ${
+                    className={`h-6 text-[10.5px] font-semibold px-2 rounded-md border active:scale-[0.98] transition-all cursor-pointer flex items-center gap-1 ${
                       pkg.is_active
-                        ? 'text-emerald-700 bg-emerald-50 border-emerald-200 hover:bg-emerald-100'
-                        : 'text-outline bg-surface-container-low border-surface-container-high hover:text-primary'
+                        ? 'text-emerald-700 bg-emerald-50 border-emerald-300 hover:bg-emerald-100'
+                        : 'text-[#64748b] bg-white border-[#d8d6d0] hover:text-[#0f172a] hover:bg-slate-100'
                     }`}
                   >
-                    <span className="material-symbols-outlined text-[14px]">
+                    <span className="material-symbols-outlined text-[13px]">
                       {pkg.is_active ? 'check_circle' : 'do_not_disturb_on'}
                     </span>
                     <span>{pkg.is_active ? 'Đang mở bán' : 'Tạm dừng'}</span>
@@ -139,9 +139,9 @@ export const PromotionPackagesTab: React.FC<PromotionPackagesTabProps> = ({
                       type="button"
                       onClick={() => onOpenModal(pkg)}
                       title="Sửa cấu hình gói"
-                      className="p-1.5 rounded-lg border border-surface-container-high text-outline hover:text-primary hover:bg-surface-container-high transition-colors cursor-pointer"
+                      className="w-6 h-6 rounded-md flex items-center justify-center bg-white hover:bg-slate-100 border border-[#d8d6d0] hover:border-slate-400 text-[#475569] hover:text-[#0f172a] active:scale-[0.98] transition-all cursor-pointer"
                     >
-                      <span className="material-symbols-outlined text-[16px]">edit</span>
+                      <span className="material-symbols-outlined text-[13px]">edit</span>
                     </button>
 
                     {/* Delete button */}
@@ -149,9 +149,9 @@ export const PromotionPackagesTab: React.FC<PromotionPackagesTabProps> = ({
                       type="button"
                       onClick={() => onDeletePackage(pkg)}
                       title="Xóa gói khuyến mãi"
-                      className="p-1.5 rounded-lg border border-surface-container-high text-outline hover:text-red-600 hover:bg-red-50 transition-colors cursor-pointer"
+                      className="w-6 h-6 rounded-md flex items-center justify-center bg-white hover:bg-rose-50 border border-rose-200 hover:border-rose-300 text-rose-600 hover:text-rose-700 active:scale-[0.98] transition-all cursor-pointer"
                     >
-                      <span className="material-symbols-outlined text-[16px]">delete</span>
+                      <span className="material-symbols-outlined text-[13px]">delete</span>
                     </button>
                   </div>
                 </div>

@@ -30,12 +30,20 @@ export default function HeroSearchFilter() {
               className="w-full h-12 px-space-md rounded-lg bg-surface-container-low text-on-surface font-body-md text-body-md focus:bg-surface-container-lowest focus:ring-1 focus:ring-secondary outline-none transition-all appearance-none cursor-pointer"
             >
               <option value="">Tất cả thương hiệu</option>
-              <option value="porsche">Porsche</option>
+              <option value="toyota">Toyota</option>
               <option value="mercedes">Mercedes-Benz</option>
               <option value="bmw">BMW</option>
-              <option value="landrover">Range Rover</option>
-              <option value="audi">Audi</option>
+              <option value="porsche">Porsche</option>
+              <option value="mitsubishi">Mitsubishi</option>
+              <option value="hyundai">Hyundai</option>
+              <option value="kia">Kia</option>
+              <option value="mazda">Mazda</option>
+              <option value="ford">Ford</option>
               <option value="lexus">Lexus</option>
+              <option value="audi">Audi</option>
+              <option value="vinfast">VinFast</option>
+              <option value="honda">Honda</option>
+              <option value="landrover">Range Rover</option>
               <option value="bentley">Bentley</option>
             </select>
             <span className="material-symbols-outlined absolute right-3 top-3 pointer-events-none text-on-surface-variant text-[20px]">
