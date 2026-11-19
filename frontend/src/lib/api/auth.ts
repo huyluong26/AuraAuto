@@ -1,4 +1,13 @@
-import { API_BASE, authFetch, getClientCache, setClientCache, clearAuthSession, parseApiError } from './core';
+import {
+  API_BASE,
+  authFetch,
+  getClientCache,
+  setClientCache,
+  invalidateClientCache,
+  deduplicatedFetch,
+  clearAuthSession,
+  parseApiError,
+} from './core';
 import {
   ListingItem,
   ListingDetail,
@@ -118,17 +127,25 @@ export const authApi = {
   async getMe(): Promise<any> {
     const token = typeof window !== 'undefined' ? localStorage.getItem('access_token') : null;
     if (!token) throw new Error('Chưa đăng nhập');
-    const res = await authFetch(`${API_BASE}/auth/me`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-      cache: 'no-store',
+
+    const cached = getClientCache<any>('auth:me');
+    if (cached) return cached;
+
+    return deduplicatedFetch('auth:me', async () => {
+      const res = await authFetch(`${API_BASE}/auth/me`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        cache: 'no-store',
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err?.error?.message || 'Không thể xác thực phiên đăng nhập');
+      }
+      const data = await res.json();
+      setClientCache('auth:me', data, 10);
+      return data;
     });
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
-      throw new Error(err?.error?.message || 'Không thể xác thực phiên đăng nhập');
-    }
-    return res.json();
   },
 
   async updateProfile(data: {
@@ -153,6 +170,7 @@ export const authApi = {
       const err = await res.json().catch(() => ({}));
       throw new Error(err?.error?.message || err?.message || 'Không thể cập nhật thông tin');
     }
+    invalidateClientCache('auth:me');
     const updated = await res.json();
     if (typeof window !== 'undefined') {
       localStorage.setItem('user', JSON.stringify(updated));

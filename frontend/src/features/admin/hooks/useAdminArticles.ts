@@ -13,14 +13,32 @@ export function useAdminArticles(initialStatus: string = 'ALL') {
   const [searchKeyword, setSearchKeyword] = useState<string>('');
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [tabCounts, setTabCounts] = useState<Record<string, number>>({
+    ALL: 0,
+    PUBLISHED: 0,
+    PENDING_REVIEW: 0,
+    DRAFT: 0,
+  });
+
+  const loadCounts = useCallback(async () => {
+    try {
+      const counts = await api.getAdminArticleCounts();
+      setTabCounts(counts);
+    } catch {
+      // fallback
+    }
+  }, []);
 
   const loadArticles = useCallback(async () => {
     try {
       setRefreshing(true);
-      const data = await api.getAdminArticles({
-        status_filter: statusFilter === 'ALL' ? undefined : statusFilter,
-        search: searchKeyword.trim() || undefined,
-      });
+      const [data] = await Promise.all([
+        api.getAdminArticles({
+          status_filter: statusFilter === 'ALL' ? undefined : statusFilter,
+          search: searchKeyword.trim() || undefined,
+        }),
+        loadCounts(),
+      ]);
       setArticles(data);
     } catch (err: any) {
       toast.error('Lỗi tải tin tức', err.message || 'Không thể tải danh sách bài viết');
@@ -28,11 +46,15 @@ export function useAdminArticles(initialStatus: string = 'ALL') {
       setLoading(false);
       setRefreshing(false);
     }
-  }, [statusFilter, searchKeyword, toast]);
+  }, [statusFilter, searchKeyword, toast, loadCounts]);
 
   useEffect(() => {
     loadArticles();
-  }, [loadArticles]);
+    const timer = setInterval(() => {
+      loadCounts();
+    }, 15000);
+    return () => clearInterval(timer);
+  }, [loadArticles, loadCounts]);
 
   const handleCreateArticle = useCallback(
     async (payload: {
@@ -141,6 +163,8 @@ export function useAdminArticles(initialStatus: string = 'ALL') {
     setStatusFilter,
     searchKeyword,
     setSearchKeyword,
+    tabCounts,
+    loadCounts,
     loadArticles,
     handleCreateArticle,
     handleUpdateArticle,

@@ -49,6 +49,20 @@ export default function SavedCarsPage() {
       }
 
       try {
+        // Ưu tiên nạp danh sách đã lưu tối ưu hóa qua API nếu người dùng đã đăng nhập
+        const token = typeof window !== 'undefined' ? localStorage.getItem('access_token') : null;
+        if (token) {
+          try {
+            const apiCars = await api.getFavorites();
+            if (mounted && apiCars && Array.isArray(apiCars) && apiCars.length > 0) {
+              setSavedCars(apiCars as any);
+              return;
+            }
+          } catch {
+            // Fallback sang nạp theo IDs từ bộ nhớ máy
+          }
+        }
+
         const carPromises = favIds.map(async (id) => {
           try {
             return await api.getListingById(id);
@@ -185,12 +199,12 @@ export default function SavedCarsPage() {
 
       {/* Floating Toast Notification */}
       <div
-        className={`fixed bottom-6 right-6 z-50 transform transition-all duration-300 pointer-events-none ${
-          toastMessage ? 'translate-y-0 opacity-100' : 'translate-y-20 opacity-0'
+        className={`fixed top-20 right-4 sm:right-6 z-50 transform transition-all duration-300 pointer-events-none ${
+          toastMessage ? 'translate-y-0 opacity-100' : '-translate-y-6 opacity-0'
         }`}
       >
-        <div className="px-4 py-3 rounded-lg bg-primary text-on-primary shadow-2xl flex items-center gap-2 font-label-md text-label-md">
-          <span className="material-symbols-outlined text-secondary-fixed text-[20px]">
+        <div className="px-4 py-3 rounded-xl shadow-lg border bg-surface-container-lowest border-secondary text-primary flex items-center gap-2.5 text-body-sm font-medium">
+          <span className="material-symbols-outlined text-secondary text-[20px]">
             check_circle
           </span>
           <span>{toastMessage}</span>

@@ -26,8 +26,11 @@ class Settings(BaseSettings):
     @classmethod
     def validate_secret_key(cls, v: str) -> str:
         env = os.getenv("ENVIRONMENT", "development").lower()
-        if env in ("production", "prod") and ("insecure" in v.lower() or v == "default-insecure-secret-key-please-change-in-production"):
-            raise ValueError("SECRET_KEY must be set to a secure unique secret in production.")
+        if env in ("production", "prod"):
+            if "insecure" in v.lower() or v == "default-insecure-secret-key-please-change-in-production":
+                raise ValueError("SECRET_KEY must be set to a secure unique secret in production.")
+            if len(v) < 32:
+                raise ValueError("SECRET_KEY must be at least 32 characters in production.")
         return v
 
     # CORS

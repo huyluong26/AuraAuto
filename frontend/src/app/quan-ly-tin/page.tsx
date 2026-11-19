@@ -8,10 +8,8 @@ import { EditListingModal } from '@/features/car-listing';
 import { ConfirmDialogModal } from '@/features/admin/components/ui/ConfirmDialogModal';
 import {
   useUserListings,
-  ListingStatsOverview,
   ListingStatusTabs,
-  ListingFilterToolbar,
-  ListingManagementTable,
+  ListingManagementCardList,
   QuickPriceEditModal,
   DeleteListingModal,
 } from '@/features/user-listings';
@@ -92,33 +90,30 @@ export default function UserListingsManagementPage() {
 
       {/* Luxury Toast Notification */}
       {toast && (
-        <div className="fixed bottom-6 right-6 z-50 animate-bounce-in max-w-md">
+        <div className="fixed top-20 right-4 sm:right-6 z-50 animate-in slide-in-from-top-2 duration-300 max-w-md">
           <div
-            className={`px-4 py-3.5 rounded-xl shadow-[0_16px_40px_rgba(0,0,0,0.35)] border flex items-center gap-3.5 backdrop-blur-md ${
+            className={`px-4 py-3 rounded-xl shadow-lg border flex items-center gap-3 text-body-sm ${
               toast.type === 'success'
-                ? 'bg-[#121315]/95 text-white border-[#2c2d30]'
-                : 'bg-[#1a0f0f]/95 text-white border-rose-900/60'
+                ? 'bg-surface-container-lowest border-secondary text-primary'
+                : 'bg-error-container border-error text-on-error-container'
             }`}
           >
-            <div
-              className={`w-1 h-9 rounded-full shrink-0 ${
-                toast.type === 'success'
-                  ? 'bg-gradient-to-b from-[#d4af37] to-[#8c6d3b]'
-                  : 'bg-rose-500'
+            <span
+              className={`material-symbols-outlined text-[20px] shrink-0 ${
+                toast.type === 'success' ? 'text-secondary' : 'text-error'
               }`}
-            />
+            >
+              {toast.type === 'success' ? 'check_circle' : 'error'}
+            </span>
             <div className="flex-1 min-w-0 pr-1">
-              <div className="text-[10px] font-bold uppercase tracking-wider text-[#d4af37]">
-                {toast.type === 'success' ? 'Hệ thống thông báo' : 'Cảnh báo thao tác'}
-              </div>
-              <p className="text-xs sm:text-sm font-medium text-neutral-200 mt-0.5 leading-snug">
+              <p className="font-medium leading-snug">
                 {toast.message}
               </p>
             </div>
             <button
               type="button"
               onClick={() => setToast(null)}
-              className="p-1 rounded text-neutral-400 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
+              className="p-1 rounded text-outline hover:text-primary transition-colors cursor-pointer"
             >
               <span className="material-symbols-outlined text-[16px]">close</span>
             </button>
@@ -126,129 +121,161 @@ export default function UserListingsManagementPage() {
         </div>
       )}
 
-      <main className="w-full pt-28 pb-16 bg-[#faf9f6] min-h-[calc(100vh-18rem)] flex-1">
-        <div className="max-w-[1720px] w-full mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
-          {/* Header & Primary Actions */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[#e5e5e0]">
-            <div>
-              <div className="flex items-center gap-2 text-xs text-[#888] mb-1 font-medium">
-                <Link href="/" className="hover:text-[#111827] transition-colors">
-                  Trang chủ
-                </Link>
-                <span>/</span>
-                <Link href="/tai-khoan" className="hover:text-[#111827] transition-colors">
-                  Tài khoản
-                </Link>
-                <span>/</span>
-                <span className="text-[#111827] font-semibold">Quản lý tin đăng</span>
-              </div>
-              <div className="flex items-center gap-3">
-                <h1 className="text-xl sm:text-2xl font-bold text-[#111827] tracking-tight font-headline">
-                  Quản lý tin đăng bán xe
-                </h1>
-                <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-neutral-200/70 text-neutral-800">
-                  {summary.total_listings} tin
-                </span>
-              </div>
-              <p className="text-xs text-[#666] mt-0.5">
-                Kiểm soát trạng thái hiển thị, theo dõi kiểm duyệt và điều chỉnh giá bán xe trên sàn AuraAuto.
-              </p>
-            </div>
-
-            <div className="flex items-center gap-2 self-start sm:self-auto shrink-0">
-              <button
-                type="button"
-                onClick={refresh}
-                disabled={loading}
-                className="px-3 py-1.5 rounded-md border border-[#d8d6d0] bg-white hover:bg-[#faf9f6] text-[#334155] hover:text-[#0f172a] transition-all text-xs font-medium cursor-pointer disabled:opacity-50 flex items-center gap-1.5 shadow-2xs active:scale-[0.99]"
-                title="Làm mới dữ liệu"
-              >
-                <span
-                  className={`material-symbols-outlined text-[16px] ${
-                    loading ? 'animate-spin text-[#8c6d3b]' : 'text-[#64748b]'
-                  }`}
-                >
-                  refresh
-                </span>
-                <span className="hidden sm:inline">Làm mới</span>
-              </button>
-
-              <Link
-                href="/dang-tin"
-                className="px-3.5 py-1.5 rounded-md bg-[#0f172a] hover:bg-black text-white border border-neutral-800 transition-all text-xs sm:text-sm font-medium flex items-center gap-1.5 shadow-xs cursor-pointer active:scale-[0.99]"
-              >
-                <span className="material-symbols-outlined text-[16px]">add</span>
-                <span>Đăng tin bán xe</span>
+      <main className="flex-1 max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 pt-28 pb-16 w-full space-y-6">
+        {/* Title Header matching /lich-hen */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <div className="flex items-center gap-2 text-xs text-[#888] mb-1 font-medium">
+              <Link href="/" className="hover:text-[#111827] transition-colors">
+                Trang chủ
               </Link>
+              <span>/</span>
+              <Link href="/tai-khoan" className="hover:text-[#111827] transition-colors">
+                Tài khoản
+              </Link>
+              <span>/</span>
+              <span className="text-[#111827] font-semibold">Quản lý tin đăng</span>
             </div>
+            <h1 className="text-2xl sm:text-3xl font-bold font-display text-[#1a1c1a] tracking-tight">
+              Quản Lý Tin Đăng Bán Xe
+            </h1>
+            <p className="text-xs sm:text-sm text-[#777777] mt-1">
+              Kiểm soát trạng thái hiển thị, theo dõi duyệt tin và các thao tác giao dịch xe trên AuraAuto.
+            </p>
           </div>
 
-          {/* Metric KPI Overview */}
-          <ListingStatsOverview summary={summary} />
+          <div className="flex items-center gap-2 self-start sm:self-auto shrink-0">
+            <button
+              type="button"
+              onClick={refresh}
+              disabled={loading}
+              className="px-3 py-2 rounded-lg border border-[#eae8e3] bg-white hover:bg-[#faf9f6] text-[#1a1c1a] transition text-xs font-semibold cursor-pointer disabled:opacity-50 flex items-center gap-1.5 shadow-2xs"
+              title="Làm mới dữ liệu"
+            >
+              <span
+                className={`material-symbols-outlined text-[16px] ${
+                  loading ? 'animate-spin text-[#b89b72]' : 'text-[#777777]'
+                }`}
+              >
+                refresh
+              </span>
+              <span className="hidden sm:inline">Làm mới</span>
+            </button>
 
-          {/* Table Container Card */}
-          <div className="bg-white rounded-xl border border-[#e8e6e1] shadow-sm overflow-hidden">
-            {/* Status Tabs Navigation */}
-            <ListingStatusTabs
-              statusTabs={statusTabs}
-              filterStatus={filterStatus}
-              onSelectTab={(st) => {
-                setFilterStatus(st);
-                setPage(1);
-              }}
-            />
-
-            {/* Filter & Search Bar */}
-            <ListingFilterToolbar
-              searchQuery={searchQuery}
-              onSearchChange={setSearchQuery}
-              sortBy={sortBy}
-              onSortChange={setSortBy}
-              pageSize={pageSize}
-              onPageSizeChange={(sz) => {
-                setPageSize(sz);
-                setPage(1);
-              }}
-              selectedCount={selectedIds.length}
-              totalListingsCount={listings.length}
-              onBulkToggleHide={handleBulkToggleHide}
-              onClearSelection={() => handleSelectAll(false)}
-            />
-
-            {/* Management Table */}
-            <ListingManagementTable
-              listings={listings}
-              loading={loading}
-              actionLoadingId={actionLoadingId}
-              selectedIds={selectedIds}
-              isAllSelected={isAllSelected}
-              isPartiallySelected={isPartiallySelected}
-              activeMenuId={activeMenuId}
-              setActiveMenuId={setActiveMenuId}
-              onSelectAll={handleSelectAll}
-              onToggleSelect={handleToggleSelect}
-              onQuickEditPrice={(item) => setEditingPriceListing(item)}
-              onFullEdit={(id) => setEditingFullListingId(id)}
-              onPromote={(item) => setSelectedPromoteListing(item)}
-              onRelist={handleRelist}
-              onSubmitReview={handleSubmitReview}
-              onToggleHide={handleToggleHide}
-              onMarkSold={handleMarkSold}
-              onDelete={(item) => setDeletingListing(item)}
-              filterStatus={filterStatus}
-              searchQuery={debouncedSearch}
-              onResetFilters={() => {
-                setSearchQuery('');
-                setFilterStatus('ALL');
-              }}
-              page={page}
-              pageSize={pageSize}
-              totalItems={totalItems}
-              totalPages={totalPages}
-              onPageChange={setPage}
-            />
+            <Link
+              href="/dang-tin"
+              className="px-4 py-2 rounded-lg bg-[#191919] hover:bg-black text-white transition text-xs font-semibold flex items-center gap-1.5 shadow-sm cursor-pointer"
+            >
+              <span className="material-symbols-outlined text-[16px]">add</span>
+              <span>Đăng tin bán xe</span>
+            </Link>
           </div>
         </div>
+
+        {/* Filter Capsule Tabs matching /lich-hen */}
+        <div className="inline-flex p-1 bg-white rounded-lg border border-[#eae8e3] shadow-sm overflow-x-auto max-w-full no-scrollbar">
+          {statusTabs.map((tab) => {
+            const isActive = filterStatus === tab.key;
+            return (
+              <button
+                key={tab.key}
+                type="button"
+                onClick={() => {
+                  setFilterStatus(tab.key);
+                  setPage(1);
+                }}
+                className={`px-3.5 py-1.5 rounded-md text-xs font-semibold whitespace-nowrap transition cursor-pointer flex items-center gap-1.5 ${
+                  isActive
+                    ? 'bg-[#191919] text-white shadow-xs'
+                    : 'text-[#777777] hover:text-[#1a1c1a] hover:bg-black/[0.02]'
+                }`}
+              >
+                {tab.isVip && (
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#d4af37] shrink-0" />
+                )}
+                <span>{tab.label}</span>
+                <span
+                  className={`px-1.5 py-0.2 rounded-full text-[10px] font-mono leading-none ${
+                    isActive
+                      ? 'bg-white/20 text-white font-bold'
+                      : 'bg-[#f4f3f0] text-[#777777]'
+                  }`}
+                >
+                  {tab.count}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Search & Sort Bar matching /lich-hen */}
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-white p-3 rounded-xl border border-[#eae8e3] shadow-2xs">
+          <div className="relative flex-1">
+            <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-[18px] text-[#9ca3af]">
+              search
+            </span>
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Tìm theo tên xe, năm sản xuất, mã tin..."
+              className="w-full pl-9 pr-8 py-2 rounded-lg border border-[#eae8e3] bg-[#faf9f6] text-xs text-[#1a1c1a] placeholder:text-[#9ca3af] focus:outline-none focus:border-[#b89b72] focus:bg-white transition"
+            />
+            {searchQuery && (
+              <button
+                type="button"
+                onClick={() => setSearchQuery('')}
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-700 p-0.5 cursor-pointer"
+              >
+                <span className="material-symbols-outlined text-[15px]">close</span>
+              </button>
+            )}
+          </div>
+
+          <div className="flex items-center gap-2 shrink-0">
+            <div className="flex items-center gap-1.5 text-xs text-[#777777]">
+              <span className="material-symbols-outlined text-[16px] text-[#b89b72]">sort</span>
+              <span className="hidden sm:inline">Sắp xếp:</span>
+            </div>
+            <select
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value as any)}
+              className="px-3 py-2 rounded-lg border border-[#eae8e3] bg-[#faf9f6] text-xs font-medium text-[#1a1c1a] focus:outline-none focus:border-[#b89b72] cursor-pointer"
+            >
+              <option value="newest">Mới nhất trước</option>
+              <option value="oldest">Cũ nhất trước</option>
+              <option value="price_asc">Giá: Thấp đến cao</option>
+              <option value="price_desc">Giá: Cao đến thấp</option>
+              <option value="views_desc">Xem nhiều nhất</option>
+            </select>
+          </div>
+        </div>
+
+        {/* Real Car Listing Cards matching /lich-hen */}
+        <ListingManagementCardList
+          listings={listings}
+          loading={loading}
+          actionLoadingId={actionLoadingId}
+          onQuickEditPrice={(item) => setEditingPriceListing(item)}
+          onFullEdit={(id) => setEditingFullListingId(id)}
+          onPromote={(item) => setSelectedPromoteListing(item)}
+          onRelist={handleRelist}
+          onSubmitReview={handleSubmitReview}
+          onToggleHide={handleToggleHide}
+          onMarkSold={handleMarkSold}
+          onDelete={(item) => setDeletingListing(item)}
+          filterStatus={filterStatus}
+          searchQuery={debouncedSearch}
+          onResetFilters={() => {
+            setSearchQuery('');
+            setFilterStatus('ALL');
+          }}
+          page={page}
+          pageSize={pageSize}
+          totalItems={totalItems}
+          totalPages={totalPages}
+          onPageChange={setPage}
+        />
       </main>
 
       <Footer />

@@ -183,7 +183,7 @@ def calculate_condition_adjustments(
 
     # 1. Thủy kích / Ngập nước
     flood = (req.flood_status or "").upper()
-    if flood == "SUBMERGED":
+    if flood in {"CONFIRMED", "SUBMERGED", "MAJOR", "SEVERE"}:
         pct = -28.0
         amt = int(round(base_price_vnd * (pct / 100.0) / 1_000_000) * 1_000_000)
         total_pct += pct
@@ -193,21 +193,21 @@ def calculate_condition_adjustments(
             impact="GIẢM",
             percentage=pct,
             amount_vnd=amt,
-            note="Khấu trừ nghiêm trọng do xe từng bị thủy kích, tiềm ẩn rủi ro chập cháy điện tử và mục gầm",
+            note="Khấu trừ nghiêm trọng do xe từng bị thủy kích/ngập nước, tiềm ẩn rủi ro chập cháy điện tử và mục gầm",
         ))
-    elif flood == "MINOR":
+    elif flood in {"SUSPECTED", "MINOR", "LIGHT"}:
         pct = -10.0
         amt = int(round(base_price_vnd * (pct / 100.0) / 1_000_000) * 1_000_000)
         total_pct += pct
         items.append(ValuationBreakdownItem(
             category="FLOOD",
-            label="Ngập nước nhẹ mép sàn xe",
+            label="Dấu hiệu nghi ngờ ngập nước / Ẩm sàn xe",
             impact="GIẢM",
             percentage=pct,
             amount_vnd=amt,
             note="Khấu trừ do ẩm sàn nội thất và ảnh hưởng giắc điện gầm xe",
         ))
-    elif flood == "NONE":
+    elif flood in {"NONE", "NO", "FALSE", "CLEAN"}:
         items.append(ValuationBreakdownItem(
             category="FLOOD",
             label="Cam kết không ngập nước / thủy kích",
@@ -219,7 +219,7 @@ def calculate_condition_adjustments(
 
     # 2. Tai nạn đâm đụng
     accident = (req.accident_status or "").upper()
-    if accident == "MAJOR":
+    if accident in {"MAJOR", "SEVERE"}:
         pct = -25.0
         amt = int(round(base_price_vnd * (pct / 100.0) / 1_000_000) * 1_000_000)
         total_pct += pct
@@ -243,7 +243,7 @@ def calculate_condition_adjustments(
             amount_vnd=amt,
             note="Khấu trừ các chi tiết vỏ đã từng nắn chỉnh hoặc gò hàn lại",
         ))
-    elif accident == "MINOR":
+    elif accident in {"MINOR", "LIGHT"}:
         pct = -2.5
         amt = int(round(base_price_vnd * (pct / 100.0) / 1_000_000) * 1_000_000)
         total_pct += pct
@@ -255,7 +255,7 @@ def calculate_condition_adjustments(
             amount_vnd=amt,
             note="Khấu trừ nhẹ chi phí đánh bóng và sơn tỉa dặm ngoại thất",
         ))
-    elif accident == "NONE":
+    elif accident in {"NONE", "NO", "CLEAN"}:
         items.append(ValuationBreakdownItem(
             category="ACCIDENT",
             label="Cam kết không đâm đụng tai nạn",
@@ -303,7 +303,7 @@ def calculate_condition_adjustments(
 
     # 4. Lịch sử bảo dưỡng
     srv = (req.service_history or "").upper()
-    if srv == "FULL_DEALER":
+    if srv in {"FULL", "FULL_DEALER"}:
         pct = +4.0
         amt = int(round(base_price_vnd * (pct / 100.0) / 1_000_000) * 1_000_000)
         total_pct += pct
@@ -315,7 +315,7 @@ def calculate_condition_adjustments(
             amount_vnd=amt,
             note="Điểm cộng: Xe được bảo dưỡng định kỳ đúng chuẩn hãng, máy móc vận hành mượt mà",
         ))
-    elif srv == "IRREGULAR":
+    elif srv in {"NONE", "IRREGULAR", "NO"}:
         pct = -4.0
         amt = int(round(base_price_vnd * (pct / 100.0) / 1_000_000) * 1_000_000)
         total_pct += pct
@@ -326,6 +326,15 @@ def calculate_condition_adjustments(
             percentage=pct,
             amount_vnd=amt,
             note="Khấu trừ chi phí kiểm tra và bảo dưỡng tổng thể dự phòng",
+        ))
+    elif srv in {"PARTIAL", "REGULAR_GARAGE"}:
+        items.append(ValuationBreakdownItem(
+            category="SERVICE",
+            label="Có sổ theo dõi bảo dưỡng định kỳ",
+            impact="NGUYÊN BẢN",
+            percentage=0.0,
+            amount_vnd=0,
+            note="Xe duy trì bảo dưỡng thường xuyên tại gara/xưởng dịch vụ uy tín",
         ))
 
     # 5. Số đời chủ & Sơn lại

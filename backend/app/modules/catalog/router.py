@@ -7,7 +7,9 @@ from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
+from app.core.deps import get_current_active_user
 from app.core.cache import fast_cache
+from app.models.user import User
 from app.models.catalog import VehicleBrand, VehicleModel, VehicleVariant
 from app.modules.catalog.schemas import BrandResponse, ModelResponse, VariantResponse
 
@@ -30,17 +32,20 @@ class ResolveBrandModelResponse(BaseModel):
 @router.post("/resolve", response_model=ResolveBrandModelResponse)
 async def resolve_or_create_brand_model(
     data: ResolveBrandModelRequest,
+    current_user: User = Depends(get_current_active_user),
     db: AsyncSession = Depends(get_db),
 ):
     b_name = data.brand_name.strip()
     stmt = select(VehicleBrand).where(func.lower(VehicleBrand.name) == func.lower(b_name))
     res = await db.execute(stmt)
     brand = res.scalar_one_or_none()
+    created_new = False
     if not brand:
         b_slug = re.sub(r'[^a-zA-Z0-9]+', '-', b_name.lower()).strip('-') or 'custom-brand'
         brand = VehicleBrand(name=b_name, slug=f"{b_slug}-{uuid.uuid4().hex[:4]}", is_active=True)
         db.add(brand)
         await db.flush()
+        created_new = True
 
     model_id = None
     resolved_model_name = None
@@ -63,10 +68,14 @@ async def resolve_or_create_brand_model(
             )
             db.add(model)
             await db.flush()
+            created_new = True
         model_id = model.id
         resolved_model_name = model.name
 
     await db.commit()
+    if created_new:
+        await fast_cache.invalidate_prefix("catalog:")
+
     return ResolveBrandModelResponse(
         brand_id=brand.id,
         brand_name=brand.name,

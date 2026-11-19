@@ -1,55 +1,25 @@
 import uuid
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timezone
 from typing import List, Optional
-from fastapi import BackgroundTasks
-from sqlalchemy import select, func, desc, or_
-from sqlalchemy.orm import selectinload
+from sqlalchemy import select, func, or_
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.security import get_password_hash
-from app.core.email import send_email_sync, render_listing_status_html
-from app.core.cleanup import run_system_maintenance
-from app.core.cache import fast_cache
-from app.modules.chats.ws_manager import ws_manager
 from app.models.user import User
-from app.models.listing import Listing, ListingRevision, ListingStatusEvent, ListingMedia
-from app.models.appointment import Appointment, AppointmentEvent
 from app.models.showroom import Showroom
-from app.models.notification import Notification
-from app.models.catalog import VehicleBrand
-from app.models.payment import PaymentTransaction, PromotionPackage
-from app.modules.payments.service import payment_service
+from app.models.payment import PaymentTransaction
 from app.modules.admin.schemas import (
-    AdminMetricsResponse,
-    RejectListingRequest,
-    TakeDownListingRequest,
-    SubmitInspectionRequest,
-    AdminUpdateListingRequest,
-    VerifyShowroomRequest,
-    UpdateUserStatusRequest,
-    BulkUpdateUserStatusRequest,
-    BulkUpdateShowroomStatusRequest,
-    BulkVerifyShowroomRequest,
-    BulkDeleteShowroomRequest,
-    UpdateUserRoleRequest,
-    AdminCreateUserRequest,
-    AdminUpdateUserRequest,
     AdminCreateShowroomRequest,
+    AdminCreateUserRequest,
     AdminUpdateShowroomRequest,
-    AdminListingItemResponse,
-    AdminListingDetailResponse,
-    AdminAppointmentItemResponse,
-    AdminAppointmentParticipant,
-    AdminAppointmentListingBrief,
-    AdminCancelAppointmentRequest,
-    AdminPromotionPackageResponse,
-    AdminCreatePromotionPackageRequest,
-    AdminUpdatePromotionPackageRequest,
-    AdminFeaturedListingItemResponse,
-    AdminGrantFeaturedRequest,
-    AdminRevokeFeaturedRequest,
-    AdminPaymentTransactionItemResponse,
-    AdminPromotionsOverviewResponse,
+    AdminUpdateUserRequest,
+    BulkDeleteShowroomRequest,
+    BulkUpdateShowroomStatusRequest,
+    BulkUpdateUserStatusRequest,
+    BulkVerifyShowroomRequest,
+    UpdateUserRoleRequest,
+    UpdateUserStatusRequest,
+    VerifyShowroomRequest,
 )
 from app.modules.auth.schemas import UserBriefResponse, ShowroomBriefResponse
 from app.shared.exceptions import NotFoundException, ConflictException, ForbiddenException
@@ -91,11 +61,17 @@ class AdminUsersMixin:
         res = await db.execute(stmt)
         users = res.scalars().all()
 
+        user_ids = [u.id for u in users]
+        sr_map = {}
+        if user_ids:
+            sr_stmt = select(Showroom).where(Showroom.owner_user_id.in_(user_ids))
+            sr_res = await db.execute(sr_stmt)
+            for sr in sr_res.scalars().all():
+                sr_map[sr.owner_user_id] = sr
+
         results = []
         for u in users:
-            sr_stmt = select(Showroom).where(Showroom.owner_user_id == u.id)
-            sr_res = await db.execute(sr_stmt)
-            sr = sr_res.scalar_one_or_none()
+            sr = sr_map.get(u.id)
             sr_brief = None
             acc_type = "INDIVIDUAL"
             if sr:
@@ -211,6 +187,14 @@ class AdminUsersMixin:
 
         if target_user.id == super_admin.id:
             raise ForbiddenException("Bạn không thể tự xóa tài khoản của chính mình")
+
+        tx_stmt = select(func.count(PaymentTransaction.id)).where(PaymentTransaction.user_id == id)
+        has_tx = (await db.scalar(tx_stmt)) or 0
+        if has_tx > 0:
+            target_user.status = "DELETED"
+            target_user.deleted_at = datetime.now(timezone.utc)
+            await db.commit()
+            return SuccessResponse(message="Tài khoản có lịch sử giao dịch thanh toán đã được lưu trữ và đánh dấu đã xóa (Bảo toàn dữ liệu thanh toán).")
 
         await db.delete(target_user)
         await db.commit()

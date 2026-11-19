@@ -73,6 +73,12 @@ async def list_pending_listings(db: AsyncSession = Depends(get_db)):
     return await service.list_listings(status_filter="PENDING_REVIEW")
 
 
+@router.get("/listings/counts")
+async def get_admin_listings_counts(db: AsyncSession = Depends(get_db)):
+    service = AdminService(db)
+    return await service.get_listings_tab_counts()
+
+
 @router.get("/listings/{id}", response_model=AdminListingDetailResponse)
 async def get_admin_listing_detail(id: uuid.UUID, db: AsyncSession = Depends(get_db)):
     service = AdminService(db)
@@ -303,6 +309,12 @@ async def list_admin_appointments(
 ):
     service = AdminService(db)
     return await service.list_appointments(status_filter=status_filter, search=search, page=page, page_size=page_size)
+
+
+@router.get("/appointments/counts")
+async def get_admin_appointments_counts(db: AsyncSession = Depends(get_db)):
+    service = AdminService(db)
+    return await service.get_appointments_tab_counts()
 
 
 @router.get("/appointments/{id}", response_model=AdminAppointmentItemResponse)

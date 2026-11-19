@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Manrope, Inter } from "next/font/google";
 import "./globals.css";
 import { FloatingChatWidget } from "@/components/chat";
+import { RealtimeNotificationListener } from "@/components/notifications/RealtimeNotificationListener";
 
 const manrope = Manrope({
   variable: "--font-manrope",
@@ -46,6 +47,7 @@ export default function RootLayout({
       </head>
       <body className="min-h-full flex flex-col bg-surface font-body-md text-on-surface antialiased selection:bg-secondary-fixed selection:text-on-secondary-fixed">
         {children}
+        <RealtimeNotificationListener />
         <FloatingChatWidget />
       </body>
     </html>

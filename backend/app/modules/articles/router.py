@@ -3,13 +3,13 @@ import uuid
 from datetime import datetime, timezone
 from typing import List, Optional
 import unicodedata
-from fastapi import APIRouter, Depends, Query, status
-from sqlalchemy import select, func, desc, or_
+from fastapi import APIRouter, Depends, Query, BackgroundTasks, status
+from sqlalchemy import select, func, desc, or_, update
 from sqlalchemy.orm import selectinload, joinedload
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.cache import fast_cache
-from app.core.database import get_db
+from app.core.database import get_db, AsyncSessionLocal
 from app.core.deps import require_admin
 from app.models.user import User
 from app.models.article import Article
@@ -101,9 +101,22 @@ async def list_published_articles(
     return items
 
 
+async def _increment_article_views(article_id: uuid.UUID):
+    """Tác vụ ngầm tăng lượt xem không làm nghẽn luồng đọc công khai."""
+    try:
+        async with AsyncSessionLocal() as session:
+            await session.execute(
+                update(Article).where(Article.id == article_id).values(views_count=Article.views_count + 1)
+            )
+            await session.commit()
+    except Exception:
+        pass
+
+
 @router.get("/articles/{id_or_slug}", response_model=ArticleDetailResponse)
 async def get_article_detail(
     id_or_slug: str,
+    background_tasks: BackgroundTasks,
     db: AsyncSession = Depends(get_db),
 ):
     try:
@@ -118,9 +131,8 @@ async def get_article_detail(
     if not article:
         raise NotFoundException("Bài viết tin tức không tồn tại")
 
-    # Tăng lượt xem
-    article.views_count += 1
-    await db.commit()
+    # Tăng lượt xem bất đồng bộ qua background task
+    background_tasks.add_task(_increment_article_views, article.id)
 
     return ArticleDetailResponse(
         id=article.id,
@@ -183,6 +195,22 @@ async def list_admin_articles(
         )
         for a in articles
     ]
+
+
+@router.get("/admin/articles/counts", dependencies=[Depends(require_admin)])
+async def get_admin_articles_counts(db: AsyncSession = Depends(get_db)):
+    rows = await db.execute(
+        select(Article.status, func.count(Article.id)).group_by(Article.status)
+    )
+    counts = {row[0]: int(row[1]) for row in rows.all()}
+    total = sum(counts.values())
+    return {
+        "ALL": total,
+        "PUBLISHED": counts.get("PUBLISHED", 0),
+        "PENDING_REVIEW": counts.get("PENDING_REVIEW", 0),
+        "DRAFT": counts.get("DRAFT", 0),
+        "ARCHIVED": counts.get("ARCHIVED", 0),
+    }
 
 
 @router.post("/admin/articles", response_model=ArticleDetailResponse, status_code=status.HTTP_201_CREATED)

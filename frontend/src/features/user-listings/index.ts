@@ -4,5 +4,6 @@ export * from './components/ListingStatsOverview';
 export * from './components/ListingStatusTabs';
 export * from './components/ListingFilterToolbar';
 export * from './components/ListingManagementTable';
+export * from './components/ListingManagementCardList';
 export * from './components/QuickPriceEditModal';
 export * from './components/DeleteListingModal';

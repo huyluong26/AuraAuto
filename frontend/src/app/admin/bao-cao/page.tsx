@@ -1,14 +1,14 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
-import { api } from '@/lib/api';
+import React from 'react';
 import { AdminHeader } from '@/features/admin/components/AdminHeader';
 import { AdminCard } from '@/features/admin/components/ui/AdminCard';
 import { AdminButton } from '@/features/admin/components/ui/AdminButton';
 import { AdminBadge } from '@/features/admin/components/ui/AdminBadge';
 import { AdminSearchInput } from '@/features/admin/components/ui/AdminSearchInput';
-import { useAdminUI } from '@/features/admin/context/AdminUIContext';
-import { AdminReportItem } from '@/features/admin/types';
+import { useAdminReports } from '@/features/admin/hooks/useAdminReports';
+import { ReportResolutionModal } from '@/features/admin/components/reports/ReportResolutionModal';
+import { EvidencePreviewModal } from '@/features/admin/components/reports/EvidencePreviewModal';
 
 const REASON_LABELS: Record<string, { label: string; color: string }> = {
   FAKE_LISTING: { label: 'Tin xe giả mạo / Ảo', color: 'bg-red-50 text-red-700 border-red-200' },
@@ -19,92 +19,29 @@ const REASON_LABELS: Record<string, { label: string; color: string }> = {
   OTHER: { label: 'Vi phạm quy chế khác', color: 'bg-gray-50 text-gray-700 border-gray-200' },
 };
 
-const ACTION_OPTIONS = [
-  { value: 'WARNING', label: '⚠️ Cảnh cáo người bán / đối tượng vi phạm', desc: 'Gửi thông báo cảnh cáo nghiêm khắc đến tài khoản.' },
-  { value: 'HIDE_LISTING', label: '👁️ Tạm ẩn tin đăng khỏi kết quả tìm kiếm', desc: 'Tạm ẩn tin đăng để chờ xác minh bổ sung từ chủ xe.' },
-  { value: 'REMOVE_LISTING', label: '🚫 Gỡ bỏ bài đăng vi phạm vĩnh viễn', desc: 'Chuyển tin sang trạng thái REMOVED và hạ khỏi sàn hoàn toàn.' },
-  { value: 'SUSPEND_USER', label: '🔒 Tạm khóa tài khoản người vi phạm', desc: 'Khóa đăng nhập tài khoản tạm thời để điều tra hành vi gian lận.' },
-  { value: 'BAN_USER', label: '⛔ Cấm vĩnh viễn tài khoản khỏi hệ thống', desc: 'Vô hiệu hóa vĩnh viễn tài khoản và hủy toàn bộ tin đăng liên quan.' },
-  { value: 'DISMISS', label: '✕ Bác bỏ tố cáo (Không đủ chứng cứ)', desc: 'Không có cơ sở kết luận vi phạm hoặc báo cáo sai lệch.' },
-];
-
 export default function AdminReportsPage() {
-  const { toast } = useAdminUI();
-
-  const [reports, setReports] = useState<AdminReportItem[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
-  const [statusFilter, setStatusFilter] = useState<string>('ALL');
-  const [searchKeyword, setSearchKeyword] = useState<string>('');
-
-  // Selected report for resolution modal
-  const [selectedReport, setSelectedReport] = useState<AdminReportItem | null>(null);
-  const [resolutionAction, setResolutionAction] = useState<string>('WARNING');
-  const [resolutionNote, setResolutionNote] = useState<string>('');
-  const [submittingAction, setSubmittingAction] = useState(false);
-
-  // Evidence preview modal
-  const [previewImage, setPreviewImage] = useState<string | null>(null);
-
-  const loadReports = useCallback(async () => {
-    try {
-      setRefreshing(true);
-      const data = await api.getAdminReports({
-        status: statusFilter === 'ALL' ? undefined : statusFilter,
-      });
-      setReports(data || []);
-    } catch (err: any) {
-      toast.error('Lỗi tải báo cáo', err.message || 'Không thể tải danh sách khiếu nại');
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
-  }, [statusFilter, toast]);
-
-  useEffect(() => {
-    loadReports();
-  }, [loadReports]);
-
-  const handleOpenResolveModal = (report: AdminReportItem) => {
-    setSelectedReport(report);
-    setResolutionAction('WARNING');
-    setResolutionNote('');
-  };
-
-  const handleResolveSubmit = async () => {
-    if (!selectedReport) return;
-    if (!resolutionNote.trim()) {
-      toast.warning('Thiếu ghi chú', 'Vui lòng nhập ghi chú phán quyết xử lý.');
-      return;
-    }
-
-    try {
-      setSubmittingAction(true);
-      await api.resolveAdminReport(selectedReport.id, {
-        action: resolutionAction,
-        note: resolutionNote.trim(),
-      });
-      toast.success('Xử lý thành công', `Đã áp dụng phán quyết đối với báo cáo #${selectedReport.id.slice(0, 8)}`);
-      setSelectedReport(null);
-      loadReports();
-    } catch (err: any) {
-      toast.error('Lỗi xử lý', err.message || 'Không thể cập nhật phán quyết báo cáo');
-    } finally {
-      setSubmittingAction(false);
-    }
-  };
-
-  const filteredReports = reports.filter((r) => {
-    if (!searchKeyword.trim()) return true;
-    const kw = searchKeyword.toLowerCase();
-    return (
-      (r.reporter_name && r.reporter_name.toLowerCase().includes(kw)) ||
-      (r.reporter_email && r.reporter_email.toLowerCase().includes(kw)) ||
-      (r.description && r.description.toLowerCase().includes(kw)) ||
-      (r.target_id && r.target_id.toLowerCase().includes(kw)) ||
-      (r.reason_code && r.reason_code.toLowerCase().includes(kw))
-    );
-  });
+  const {
+    reports,
+    filteredReports,
+    loading,
+    refreshing,
+    statusFilter,
+    setStatusFilter,
+    searchKeyword,
+    setSearchKeyword,
+    selectedReport,
+    setSelectedReport,
+    resolutionAction,
+    setResolutionAction,
+    resolutionNote,
+    setResolutionNote,
+    submittingAction,
+    previewImage,
+    setPreviewImage,
+    loadReports,
+    handleOpenResolveModal,
+    handleResolveSubmit,
+  } = useAdminReports();
 
   const pendingCount = reports.filter((r) => r.status === 'PENDING').length;
 
@@ -356,123 +293,22 @@ export default function AdminReportsPage() {
       </main>
 
       {/* Resolution Decision Modal */}
-      {selectedReport && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto animate-in fade-in">
-          <div className="bg-surface-container-lowest border border-surface-container-high rounded-2xl w-full max-w-xl flex flex-col shadow-2xl overflow-hidden animate-in zoom-in-95">
-            <div className="px-6 py-4 border-b border-surface-container-high bg-surface-container-low flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-red-600 text-white flex items-center justify-center shrink-0">
-                  <span className="material-symbols-outlined text-[22px]">gavel</span>
-                </div>
-                <div>
-                  <h3 className="font-headline-sm text-base text-primary font-bold">
-                    Hội đồng Thẩm tra &amp; Kỷ luật
-                  </h3>
-                  <p className="font-body-sm text-xs text-outline">
-                    Báo cáo #{selectedReport.id.slice(0, 8)} • Mục tiêu: {selectedReport.target_type}
-                  </p>
-                </div>
-              </div>
-              <button
-                type="button"
-                onClick={() => setSelectedReport(null)}
-                className="w-8 h-8 rounded-lg border border-surface-container-high flex items-center justify-center text-outline hover:text-primary cursor-pointer"
-              >
-                <span className="material-symbols-outlined text-[18px]">close</span>
-              </button>
-            </div>
-
-            <div className="p-6 space-y-4">
-              <div className="p-3.5 rounded-xl bg-surface-container-low border border-surface-container-high text-xs space-y-1">
-                <span className="font-bold text-primary">Tố cáo:</span> {selectedReport.description}
-              </div>
-
-              {/* Action selection */}
-              <div className="space-y-2">
-                <label className="font-label-md text-xs font-bold text-primary block">
-                  Chọn hình thức chế tài xử lý:
-                </label>
-                <div className="space-y-2 max-h-56 overflow-y-auto pr-1">
-                  {ACTION_OPTIONS.map((opt) => (
-                    <label
-                      key={opt.value}
-                      className={`p-3 rounded-xl border flex items-start gap-3 cursor-pointer transition-all ${
-                        resolutionAction === opt.value
-                          ? 'border-red-600 bg-red-50/70 ring-1 ring-red-600'
-                          : 'border-surface-container-high bg-surface-container-lowest hover:bg-surface-container-low'
-                      }`}
-                    >
-                      <input
-                        type="radio"
-                        name="resolution_action"
-                        value={opt.value}
-                        checked={resolutionAction === opt.value}
-                        onChange={(e) => setResolutionAction(e.target.value)}
-                        className="mt-0.5 text-red-600 focus:ring-red-500"
-                      />
-                      <div className="flex-1 text-xs">
-                        <div className="font-bold text-primary">{opt.label}</div>
-                        <div className="text-outline text-[11px] mt-0.5">{opt.desc}</div>
-                      </div>
-                    </label>
-                  ))}
-                </div>
-              </div>
-
-              {/* Resolution Note */}
-              <div className="space-y-1.5">
-                <label className="font-label-md text-xs font-bold text-primary block">
-                  Ghi chú kết luận &amp; Căn cứ phán quyết (Bắt buộc):
-                </label>
-                <textarea
-                  value={resolutionNote}
-                  onChange={(e) => setResolutionNote(e.target.value)}
-                  placeholder="Ghi rõ lý do đưa ra chế tài, kết quả điều tra và thời hạn xử phạt..."
-                  rows={3}
-                  className="w-full p-3 rounded-xl border border-surface-container-high bg-surface-container-lowest text-xs text-on-surface focus:outline-none focus:border-red-600"
-                />
-              </div>
-            </div>
-
-            <div className="px-6 py-4 border-t border-surface-container-high bg-surface-container-low flex items-center justify-end gap-3">
-              <AdminButton
-                variant="outline"
-                size="sm"
-                onClick={() => setSelectedReport(null)}
-              >
-                Hủy bỏ
-              </AdminButton>
-              <AdminButton
-                variant="danger"
-                size="sm"
-                loading={submittingAction}
-                onClick={handleResolveSubmit}
-              >
-                Xác nhận thực thi chế tài
-              </AdminButton>
-            </div>
-          </div>
-        </div>
-      )}
+      <ReportResolutionModal
+        report={selectedReport}
+        resolutionAction={resolutionAction}
+        onResolutionActionChange={setResolutionAction}
+        resolutionNote={resolutionNote}
+        onResolutionNoteChange={setResolutionNote}
+        submitting={submittingAction}
+        onClose={() => setSelectedReport(null)}
+        onSubmit={handleResolveSubmit}
+      />
 
       {/* Enlarged Evidence Modal */}
-      {previewImage && (
-        <div
-          className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 cursor-pointer"
-          onClick={() => setPreviewImage(null)}
-        >
-          <div className="relative max-w-4xl max-h-[90vh] rounded-2xl overflow-hidden border border-white/20 shadow-2xl bg-black">
-            <img src={previewImage} alt="Phóng to bằng chứng" className="w-full h-full object-contain" />
-            <button
-              type="button"
-              onClick={() => setPreviewImage(null)}
-              className="absolute top-4 right-4 w-9 h-9 rounded-full bg-black/60 text-white flex items-center justify-center hover:bg-black/90 cursor-pointer"
-            >
-              <span className="material-symbols-outlined text-[20px]">close</span>
-            </button>
-          </div>
-        </div>
-      )}
+      <EvidencePreviewModal
+        imageUrl={previewImage}
+        onClose={() => setPreviewImage(null)}
+      />
     </div>
   );
 }

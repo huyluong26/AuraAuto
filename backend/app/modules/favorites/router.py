@@ -1,14 +1,14 @@
 import uuid
 from typing import List
 from fastapi import APIRouter, Depends, status
-from sqlalchemy import select
+from sqlalchemy import select, update, and_
 from sqlalchemy.orm import selectinload
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
 from app.core.deps import get_current_active_user
 from app.models.user import User
-from app.models.listing import Listing, ListingRevision
+from app.models.listing import Listing, ListingRevision, ListingMedia
 from app.models.favorite import Favorite
 from app.modules.listings.schemas import ListingListItemResponse
 from app.shared.exceptions import NotFoundException, ConflictException
@@ -39,7 +39,9 @@ async def add_favorite(
 
     fav = Favorite(user_id=current_user.id, listing_id=listing_id)
     db.add(fav)
-    listing.favorites_count += 1
+    await db.execute(
+        update(Listing).where(Listing.id == listing_id).values(favorites_count=Listing.favorites_count + 1)
+    )
     await db.commit()
 
     return SuccessResponse(message="Đã lưu tin đăng vào danh sách yêu thích")
@@ -61,13 +63,11 @@ async def remove_favorite(
         raise NotFoundException("Tin này không có trong danh sách yêu thích của bạn")
 
     await db.delete(fav)
-
-    listing_stmt = select(Listing).where(Listing.id == listing_id)
-    l_res = await db.execute(listing_stmt)
-    listing = l_res.scalar_one_or_none()
-    if listing and listing.favorites_count > 0:
-        listing.favorites_count -= 1
-
+    await db.execute(
+        update(Listing)
+        .where(Listing.id == listing_id, Listing.favorites_count > 0)
+        .values(favorites_count=Listing.favorites_count - 1)
+    )
     await db.commit()
     return SuccessResponse(message="Đã xóa khỏi danh sách yêu thích")
 
@@ -78,10 +78,17 @@ async def list_favorites(
     db: AsyncSession = Depends(get_db),
 ):
     stmt = (
-        select(Favorite, Listing, ListingRevision, User)
+        select(Favorite, Listing, ListingRevision, User, ListingMedia.url)
         .join(Listing, Favorite.listing_id == Listing.id)
         .join(ListingRevision, Listing.published_revision_id == ListingRevision.id)
         .join(User, Listing.seller_user_id == User.id)
+        .outerjoin(
+            ListingMedia,
+            and_(
+                ListingMedia.revision_id == ListingRevision.id,
+                ListingMedia.is_primary.is_(True),
+            ),
+        )
         .where(Favorite.user_id == current_user.id)
         .order_by(Favorite.created_at.desc())
     )
@@ -89,7 +96,11 @@ async def list_favorites(
     rows = res.all()
 
     items = []
-    for _, listing, rev, seller in rows:
+    seen_ids = set()
+    for _, listing, rev, seller, primary_img in rows:
+        if listing.id in seen_ids:
+            continue
+        seen_ids.add(listing.id)
         items.append(
             ListingListItemResponse(
                 id=listing.id,
@@ -102,7 +113,7 @@ async def list_favorites(
                 fuel_type=rev.fuel_type,
                 transmission=rev.transmission,
                 province_code=rev.province_code,
-                primary_image_url=None,
+                primary_image_url=primary_img,
                 seller_id=seller.id,
                 seller_name=seller.display_name,
                 published_at=listing.published_at,

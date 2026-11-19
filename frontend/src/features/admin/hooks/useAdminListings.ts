@@ -14,14 +14,34 @@ export function useAdminListings(initialStatus: string = 'ALL') {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [tabCounts, setTabCounts] = useState<Record<string, number>>({
+    ALL: 0,
+    PENDING_REVIEW: 0,
+    PUBLISHED: 0,
+    REJECTED: 0,
+    SOLD: 0,
+    DRAFT: 0,
+  });
+
+  const loadCounts = useCallback(async () => {
+    try {
+      const counts = await api.getAdminListingCounts();
+      setTabCounts(counts);
+    } catch {
+      // fallback silently
+    }
+  }, []);
 
   const loadListings = useCallback(async () => {
     try {
       setRefreshing(true);
-      const data = await api.getAdminListings({
-        status_filter: statusFilter === 'ALL' ? undefined : statusFilter,
-        search: searchKeyword.trim() || undefined,
-      });
+      const [data] = await Promise.all([
+        api.getAdminListings({
+          status_filter: statusFilter === 'ALL' ? undefined : statusFilter,
+          search: searchKeyword.trim() || undefined,
+        }),
+        loadCounts(),
+      ]);
       setListings(data);
       setSelectedIds([]);
     } catch (err: any) {
@@ -30,11 +50,15 @@ export function useAdminListings(initialStatus: string = 'ALL') {
       setLoading(false);
       setRefreshing(false);
     }
-  }, [statusFilter, searchKeyword, toast]);
+  }, [statusFilter, searchKeyword, toast, loadCounts]);
 
   useEffect(() => {
     loadListings();
-  }, [loadListings]);
+    const timer = setInterval(() => {
+      loadCounts();
+    }, 15000);
+    return () => clearInterval(timer);
+  }, [loadListings, loadCounts]);
 
   const handleSelectAll = useCallback(
     (checked: boolean) => {
@@ -268,6 +292,8 @@ export function useAdminListings(initialStatus: string = 'ALL') {
     setSearchKeyword,
     selectedIds,
     setSelectedIds,
+    tabCounts,
+    loadCounts,
     loadListings,
     handleSelectAll,
     handleToggleSelect,

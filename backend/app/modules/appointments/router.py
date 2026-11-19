@@ -41,6 +41,7 @@ def _to_response(appt: Appointment) -> AppointmentResponse:
             id=appt.listing.id,
             title=rev.title if rev else "Xe ô tô",
             price_vnd=rev.price_vnd if rev else 0,
+            status=appt.listing.status if appt.listing else None,
         ),
         buyer=AppointmentParticipant(
             id=appt.buyer.id,
@@ -86,7 +87,7 @@ async def list_appointments(
             selectinload(Appointment.listing).selectinload(Listing.published_revision),
             selectinload(Appointment.listing).selectinload(Listing.revisions),
         )
-        .order_by(Appointment.scheduled_at.desc())
+        .order_by(Appointment.created_at.desc(), Appointment.scheduled_at.desc())
     )
 
     if role == "buyer":
@@ -151,3 +152,17 @@ async def complete_appointment(
     service = AppointmentService(db)
     appt = await service.complete_appointment(id, current_user)
     return SuccessResponse(message="Đã xác nhận hoàn thành buổi xem xe!", data={"status": appt.status})
+
+
+@router.post("/{id}/mark-sold", response_model=SuccessResponse)
+async def mark_appointment_sold(
+    id: uuid.UUID,
+    current_user: User = Depends(get_current_active_user),
+    db: AsyncSession = Depends(get_db),
+):
+    service = AppointmentService(db)
+    appt = await service.mark_sold_appointment(id, current_user)
+    return SuccessResponse(
+        message="Xác nhận đã bán xe thành công! Tin đăng xe đã được chuyển sang trạng thái Đã bán.",
+        data={"status": appt.status, "listing_status": "SOLD"},
+    )

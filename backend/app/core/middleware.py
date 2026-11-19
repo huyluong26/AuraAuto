@@ -22,6 +22,14 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
         response.headers["X-XSS-Protection"] = "1; mode=block"
         response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
         response.headers["Permissions-Policy"] = "geolocation=(), camera=(), microphone=()"
+        response.headers["Cross-Origin-Opener-Policy"] = "same-origin-allow-popups"
+        response.headers["Content-Security-Policy"] = "frame-ancestors 'none';"
+
+        # HSTS (Strict-Transport-Security) khi có HTTPS hoặc chạy trên môi trường production
+        from app.core.config import settings
+        is_https = request.url.scheme == "https" or request.headers.get("x-forwarded-proto") == "https"
+        if is_https or settings.ENVIRONMENT.lower() in ("production", "prod"):
+            response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains; preload"
 
         # Ngăn chặn cache cho các endpoint nhạy cảm (Auth, Tokens)
         if "/auth/" in request.url.path:
@@ -50,6 +58,7 @@ class AuthSecurityMiddleware(BaseHTTPMiddleware):
         self.ip_attempts: Dict[str, List[float]] = defaultdict(list)
         self.ai_attempts: Dict[str, List[float]] = defaultdict(list)
         self.last_cleanup = time.time()
+        self.last_ai_cleanup = time.time()
 
     def _get_client_ip(self, request: Request) -> str:
         peer_ip = request.client.host if request.client else "unknown"
@@ -94,13 +103,14 @@ class AuthSecurityMiddleware(BaseHTTPMiddleware):
 
     def _is_ai_rate_limited(self, client_ip: str) -> bool:
         now = time.time()
-        if now - self.last_cleanup > 120:
+        if now - self.last_ai_cleanup > 120:
             stale_ips = [
                 ip for ip, timestamps in self.ai_attempts.items()
                 if not timestamps or now - timestamps[-1] >= self.RATE_LIMIT_WINDOW
             ]
             for ip in stale_ips:
                 del self.ai_attempts[ip]
+            self.last_ai_cleanup = now
 
         attempts = [t for t in self.ai_attempts[client_ip] if now - t < self.RATE_LIMIT_WINDOW]
         if len(attempts) >= self.MAX_AI_REQUESTS:
@@ -150,7 +160,7 @@ class AuthSecurityMiddleware(BaseHTTPMiddleware):
                     cl_int = int(content_length)
                     if cl_int < 0 or cl_int > self.MAX_AUTH_BODY_SIZE:
                         return JSONResponse(
-                            status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+                            status_code=getattr(status, "HTTP_413_CONTENT_TOO_LARGE", 413),
                             content={
                                 "error": {
                                     "code": "PAYLOAD_TOO_LARGE",

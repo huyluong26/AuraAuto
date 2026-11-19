@@ -19,6 +19,38 @@ export function setClientCache(key: string, data: any, ttlSeconds: number = 300)
   clientMemoryCache.set(key, { data, expiry: Date.now() + ttlSeconds * 1000 });
 }
 
+export function invalidateClientCache(prefix?: string): void {
+  if (typeof window === 'undefined') return;
+  if (!prefix) {
+    clientMemoryCache.clear();
+    return;
+  }
+  for (const k of clientMemoryCache.keys()) {
+    if (k.startsWith(prefix)) {
+      clientMemoryCache.delete(k);
+    }
+  }
+}
+
+// In-flight GET request deduplication to prevent duplicate network calls when multiple components mount concurrently
+const inflightGetRequests = new Map<string, Promise<any>>();
+
+export async function deduplicatedFetch<T>(
+  key: string,
+  fetchFn: () => Promise<T>
+): Promise<T> {
+  const existing = inflightGetRequests.get(key);
+  if (existing) {
+    return existing as Promise<T>;
+  }
+
+  const promise = fetchFn().finally(() => {
+    inflightGetRequests.delete(key);
+  });
+  inflightGetRequests.set(key, promise);
+  return promise;
+}
+
 export function formatVND(amount?: number | null): string {
   if (amount === undefined || amount === null || amount <= 0) return 'Thỏa thuận';
   if (amount >= 1_000_000_000) {
@@ -110,6 +142,7 @@ export function clearAuthSession() {
   localStorage.removeItem('refresh_token');
   localStorage.removeItem('user');
   localStorage.removeItem('user_province_code');
+  invalidateClientCache();
   window.dispatchEvent(new Event('aura_auth_changed'));
 }
 

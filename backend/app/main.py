@@ -193,7 +193,17 @@ async def global_exception_handler(request: Request, exc: Exception):
     logger.exception(f"Unhandled exception on {request.method} {request.url.path}: {exc}")
     origin = request.headers.get("origin")
     headers = {}
-    if origin and (origin in settings.BACKEND_CORS_ORIGINS or "*" in settings.BACKEND_CORS_ORIGINS or "localhost" in origin):
+    allowed_origins = set(settings.BACKEND_CORS_ORIGINS)
+    is_allowed = False
+    if origin:
+        if origin in allowed_origins or "*" in allowed_origins:
+            is_allowed = True
+        elif settings.ENVIRONMENT.lower() == "development" and (
+            origin.startswith("http://localhost:") or origin.startswith("http://127.0.0.1:")
+        ):
+            is_allowed = True
+
+    if origin and is_allowed:
         headers["Access-Control-Allow-Origin"] = origin
         headers["Access-Control-Allow-Credentials"] = "true"
         headers["Access-Control-Allow-Methods"] = "*"

@@ -177,15 +177,51 @@ class GeminiClient:
         odometer_km: int,
         estimated_price_vnd: int,
         allow_api: bool = True,
+        flood_status: Optional[str] = None,
+        accident_status: Optional[str] = None,
+        service_history: Optional[str] = None,
+        engine_repaired: Optional[bool] = None,
+        transmission_repaired: Optional[bool] = None,
     ) -> GeminiExplanation:
         """Provide detailed explanation on valuation factors."""
         price_in_million = round(estimated_price_vnd / 1_000_000)
+
+        cond_lines = []
+        f_upper = (flood_status or "").upper()
+        if f_upper in {"CONFIRMED", "SUBMERGED"}:
+            cond_lines.append("- Tình trạng: Xe từng bị ngập nước / thủy kích.")
+        elif f_upper in {"SUSPECTED", "MINOR"}:
+            cond_lines.append("- Tình trạng: Xe có dấu hiệu nghi ngờ ngập nước.")
+        elif f_upper == "NONE":
+            cond_lines.append("- Tình trạng: Cam kết không ngập nước.")
+
+        a_upper = (accident_status or "").upper()
+        if a_upper in {"MAJOR", "SEVERE"}:
+            cond_lines.append("- Tai nạn: Đâm đụng biến dạng kết cấu khung gầm sắt-xi.")
+        elif a_upper == "MODERATE":
+            cond_lines.append("- Tai nạn: Va chạm móp méo thân vỏ phụ tùng.")
+        elif a_upper in {"MINOR", "LIGHT"}:
+            cond_lines.append("- Tai nạn: Xước xát nhẹ thân vỏ ngoài da.")
+        elif a_upper == "NONE":
+            cond_lines.append("- Tai nạn: Cam kết nguyên bản, không đâm đụng.")
+
+        if engine_repaired is True:
+            cond_lines.append("- Động cơ: Đã từng rã máy / đại tu.")
+        if transmission_repaired is True:
+            cond_lines.append("- Hộp số: Đã từng rã máy / đại tu.")
+        s_upper = (service_history or "").upper()
+        if s_upper in {"FULL", "FULL_DEALER"}:
+            cond_lines.append("- Bảo dưỡng: Đầy đủ sổ bảo dưỡng hãng.")
+        elif s_upper in {"NONE", "IRREGULAR"}:
+            cond_lines.append("- Bảo dưỡng: Không có hồ sơ bảo dưỡng định kỳ rõ ràng.")
+
+        cond_text = ("\nThông tin kiểm định kỹ thuật:\n" + "\n".join(cond_lines)) if cond_lines else ""
 
         if self.api_key and allow_api:
             try:
                 prompt = (
                     f"Giải thích mức định giá chiếc xe ô tô cũ: {brand} {model}, năm sản xuất: {year}, số km đã đi: {odometer_km} km. "
-                    f"Giá dự đoán của mô hình: {price_in_million} triệu VNĐ.\n"
+                    f"Giá dự đoán của mô hình: {price_in_million} triệu VNĐ.{cond_text}\n"
                     "Trả về JSON với các trường:\n"
                     "summary: tóm tắt 1-2 câu về mức giá này,\n"
                     "positive_factors: mảng 2-3 chuỗi điểm cộng giữ giá,\n"
@@ -231,6 +267,30 @@ class GeminiClient:
             negative.append(f"Xe đã qua {age} năm sử dụng, cần kiểm tra hao mòn linh kiện định kỳ")
         if avg_km_per_year > 25000:
             negative.append("Số km di chuyển cao hơn mức trung bình gia đình")
+
+        # Thẩm định yếu tố kỹ thuật thực tế
+        if f_upper in {"CONFIRMED", "SUBMERGED"}:
+            negative.append("Xe từng bị ngập nước / thủy kích - tiềm ẩn rủi ro chập cháy hệ thống điện tử và mục gầm")
+        elif f_upper in {"SUSPECTED", "MINOR"}:
+            negative.append("Xe có dấu hiệu nghi ngờ ngập nước - cần kiểm tra kỹ giắc điện và sàn xe")
+
+        if a_upper in {"MAJOR", "SEVERE"}:
+            negative.append("Xe từng đâm đụng tổn hại kết cấu khung sườn sắt-xi chịu lực")
+        elif a_upper == "MODERATE":
+            negative.append("Xe từng va chạm biến dạng thân vỏ, đã nắn chỉnh lại các chi tiết")
+
+        if engine_repaired is True:
+            negative.append("Động cơ đã từng rã máy / đại tu, làm mất giá trị máy nguyên bản")
+        if transmission_repaired is True:
+            negative.append("Hộp số đã từng rã đại tu / sửa chữa")
+
+        if s_upper in {"FULL", "FULL_DEALER"}:
+            positive.append("Lịch sử bảo dưỡng chính hãng đầy đủ 100%, máy móc vận hành tin cậy")
+        elif s_upper in {"NONE", "IRREGULAR"}:
+            negative.append("Lịch sử bảo dưỡng chưa rõ ràng, cần kiểm tra dự phòng tổng thể")
+
+        if f_upper == "NONE" and a_upper == "NONE" and engine_repaired is False:
+            positive.append("Cam kết xe nguyên bản: không đâm đụng, không ngập nước, máy số zin")
 
         if price_in_million >= 1000:
             price_str = f"{price_in_million / 1000:.2f}".rstrip("0").rstrip(".") + " tỷ VNĐ"

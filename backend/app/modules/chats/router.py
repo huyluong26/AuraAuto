@@ -30,11 +30,18 @@ async def get_or_create_conversation(
 ):
     service = ChatService(db)
     conv = await service.get_or_create_conversation(data.listing_id, current_user)
-    convs = await service.list_user_conversations(current_user)
-    for c in convs:
-        if c.id == conv.id:
-            return c
-    return convs[0]
+    convs = await service.list_user_conversations(current_user, conversation_id=conv.id)
+    if convs:
+        return convs[0]
+    return ConversationResponse(
+        id=conv.id,
+        listing_id=conv.listing_id,
+        last_message_at=conv.last_message_at,
+        last_message_preview=conv.last_message_preview,
+        unread_count=0,
+        other_participant=None,
+        listing=None,
+    )
 
 
 @router.get("/conversations", response_model=List[ConversationResponse])

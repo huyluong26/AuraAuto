@@ -40,10 +40,26 @@ def test_render_listing_status_html_approved():
         seller_name="Pham D",
         car_title="Mazda CX-5 2.0 Luxury 2022",
         status_text="PUBLISHED",
+        listing_id="test-listing-uuid-123",
     )
     assert "Pham D" in html
     assert "Mazda CX-5 2.0 Luxury 2022" in html
     assert "ĐÃ ĐƯỢC PHÊ DUYỆT XUẤT BẢN" in html
+    assert "/xe/test-listing-uuid-123" in html
+    assert "/quan-ly-tin" in html
+
+
+def test_render_listing_status_html_pending_review():
+    html = render_listing_status_html(
+        seller_name="Hoang E",
+        car_title="Honda CR-V 1.5L 2023",
+        status_text="PENDING_REVIEW",
+        listing_id="test-listing-uuid-456",
+    )
+    assert "Hoang E" in html
+    assert "Honda CR-V 1.5L 2023" in html
+    assert "ĐANG CHỜ DUYỆT HỒ SƠ" in html
+    assert "/quan-ly-tin" in html
 
 
 def test_render_listing_status_html_rejected_with_note():
@@ -55,6 +71,19 @@ def test_render_listing_status_html_rejected_with_note():
     )
     assert "CẦN CHỈNH SỬA BỔ SUNG" in html
     assert "Hình ảnh chụp giấy tờ đăng kiểm bị mờ" in html
+    assert "/quan-ly-tin" in html
+
+
+def test_render_listing_status_html_removed():
+    html = render_listing_status_html(
+        seller_name="Vu G",
+        car_title="Ford Ranger Wildtrak 2021",
+        status_text="REMOVED",
+        note="Phát hiện xe không chính chủ và thông tin không khớp.",
+    )
+    assert "ĐÃ GỠ BỎ KHỎI SÀN" in html
+    assert "Phát hiện xe không chính chủ" in html
+    assert "/quan-ly-tin" in html
 
 
 def test_send_email_sync_mock_mode():

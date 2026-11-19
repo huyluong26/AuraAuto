@@ -33,6 +33,9 @@ class Appointment(BaseModel):
         CheckConstraint("status IN ('PENDING','CONFIRMED','DECLINED','CANCELLED','COMPLETED')", name="ck_appt_status"),
         Index("idx_appt_buyer_time", "buyer_user_id", "scheduled_at"),
         Index("idx_appt_seller_status", "seller_user_id", "status", "scheduled_at"),
+        Index("idx_appt_buyer_status", "buyer_user_id", "status", "scheduled_at"),
+        Index("idx_appt_created_scheduled", "created_at", "scheduled_at"),
+        Index("idx_appt_status_created", "status", "created_at"),
         Index(
             "uq_appt_active_buyer_listing",
             "listing_id",

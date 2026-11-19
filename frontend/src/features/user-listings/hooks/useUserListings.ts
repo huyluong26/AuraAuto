@@ -108,7 +108,7 @@ export function useUserListings() {
         setLoading(true);
         const apiFilter = filterStatus === 'FEATURED' ? 'ALL' : filterStatus;
         const [sumData, res] = await Promise.all([
-          api.getMyListingsSummary(),
+          api.getMyListingsSummary(refreshKey > 0),
           api.getMyListings(page, pageSize, apiFilter, debouncedSearch),
         ]);
         if (!isSubscribed) return;

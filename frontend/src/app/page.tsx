@@ -88,7 +88,7 @@ export default async function HomePage() {
       <Navbar />
 
       {/* 2. Main Page Content */}
-      <main className="w-full pt-20 bg-surface min-h-[calc(100vh-20rem)] flex-1">
+      <main className="w-full bg-surface min-h-[calc(100vh-20rem)] flex-1">
         <div className="flex flex-col w-full">
           {/* Hero Section Điện Ảnh & Tìm Kiếm Xe Tương Tác */}
           <HeroSection />

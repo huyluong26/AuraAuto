@@ -1,58 +1,16 @@
-import uuid
 from datetime import datetime, timezone, timedelta
 from typing import List, Optional
-from fastapi import BackgroundTasks
-from sqlalchemy import select, func, desc, or_
-from sqlalchemy.orm import selectinload
+from sqlalchemy import select, func, desc, and_
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.security import get_password_hash
-from app.core.email import send_email_sync, render_listing_status_html
 from app.core.cleanup import run_system_maintenance
 from app.core.cache import fast_cache
-from app.modules.chats.ws_manager import ws_manager
 from app.models.user import User
-from app.models.listing import Listing, ListingRevision, ListingStatusEvent, ListingMedia
-from app.models.appointment import Appointment, AppointmentEvent
-from app.models.showroom import Showroom
-from app.models.notification import Notification
+from app.models.listing import Listing, ListingRevision
+from app.models.appointment import Appointment
 from app.models.catalog import VehicleBrand
-from app.models.payment import PaymentTransaction, PromotionPackage
-from app.modules.payments.service import payment_service
-from app.modules.admin.schemas import (
-    AdminMetricsResponse,
-    RejectListingRequest,
-    TakeDownListingRequest,
-    SubmitInspectionRequest,
-    AdminUpdateListingRequest,
-    VerifyShowroomRequest,
-    UpdateUserStatusRequest,
-    BulkUpdateUserStatusRequest,
-    BulkUpdateShowroomStatusRequest,
-    BulkVerifyShowroomRequest,
-    BulkDeleteShowroomRequest,
-    UpdateUserRoleRequest,
-    AdminCreateUserRequest,
-    AdminUpdateUserRequest,
-    AdminCreateShowroomRequest,
-    AdminUpdateShowroomRequest,
-    AdminListingItemResponse,
-    AdminListingDetailResponse,
-    AdminAppointmentItemResponse,
-    AdminAppointmentParticipant,
-    AdminAppointmentListingBrief,
-    AdminCancelAppointmentRequest,
-    AdminPromotionPackageResponse,
-    AdminCreatePromotionPackageRequest,
-    AdminUpdatePromotionPackageRequest,
-    AdminFeaturedListingItemResponse,
-    AdminGrantFeaturedRequest,
-    AdminRevokeFeaturedRequest,
-    AdminPaymentTransactionItemResponse,
-    AdminPromotionsOverviewResponse,
-)
-from app.modules.auth.schemas import UserBriefResponse, ShowroomBriefResponse
-from app.shared.exceptions import NotFoundException, ConflictException, ForbiddenException
+from app.models.payment import PaymentTransaction
+from app.modules.admin.schemas import AdminMetricsResponse
 from app.shared.schemas import SuccessResponse
 
 
@@ -64,19 +22,47 @@ class AdminMetricsMixin:
     # 1. METRICS & KPI DASHBOARD
     # ==========================================
     async def get_dashboard_metrics(self) -> AdminMetricsResponse:
+        cache_key = "admin:dashboard_metrics"
+        cached = await fast_cache.get(cache_key)
+        if cached is not None:
+            return cached
+
         db = self.db
         users_count = await db.scalar(select(func.count(User.id))) or 0
-        listings_count = await db.scalar(select(func.count(Listing.id))) or 0
-        pending_count = await db.scalar(select(func.count(Listing.id)).where(Listing.status == "PENDING_REVIEW")) or 0
-        published_count = await db.scalar(select(func.count(Listing.id)).where(Listing.status == "PUBLISHED")) or 0
-        sold_count = await db.scalar(select(func.count(Listing.id)).where(Listing.status == "SOLD")) or 0
-        rejected_count = await db.scalar(select(func.count(Listing.id)).where(Listing.status == "REJECTED")) or 0
-        appointments_count = await db.scalar(select(func.count(Appointment.id))) or 0
-        pending_appts_count = await db.scalar(select(func.count(Appointment.id)).where(Appointment.status == "PENDING")) or 0
-        confirmed_appts_count = await db.scalar(select(func.count(Appointment.id)).where(Appointment.status == "CONFIRMED")) or 0
-        completed_appts_count = await db.scalar(select(func.count(Appointment.id)).where(Appointment.status == "COMPLETED")) or 0
-        cancelled_appts_count = await db.scalar(select(func.count(Appointment.id)).where(Appointment.status == "CANCELLED")) or 0
-        declined_appts_count = await db.scalar(select(func.count(Appointment.id)).where(Appointment.status == "DECLINED")) or 0
+
+        # Gộp tất cả các thống kê tin đăng thành 1 truy vấn duy nhất
+        listing_metrics_stmt = select(
+            func.count(Listing.id).label("total"),
+            func.count(Listing.id).filter(Listing.status == "PENDING_REVIEW").label("pending"),
+            func.count(Listing.id).filter(Listing.status == "PUBLISHED").label("published"),
+            func.count(Listing.id).filter(Listing.status == "SOLD").label("sold"),
+            func.count(Listing.id).filter(Listing.status == "REJECTED").label("rejected"),
+            func.count(Listing.id).filter(Listing.status == "DRAFT").label("draft"),
+        )
+        l_row = (await db.execute(listing_metrics_stmt)).one()
+        listings_count = int(l_row.total or 0)
+        pending_count = int(l_row.pending or 0)
+        published_count = int(l_row.published or 0)
+        sold_count = int(l_row.sold or 0)
+        rejected_count = int(l_row.rejected or 0)
+        draft_count = int(l_row.draft or 0)
+
+        # Gộp tất cả các thống kê lịch hẹn thành 1 truy vấn duy nhất
+        appt_metrics_stmt = select(
+            func.count(Appointment.id).label("total"),
+            func.count(Appointment.id).filter(Appointment.status == "PENDING").label("pending"),
+            func.count(Appointment.id).filter(Appointment.status == "CONFIRMED").label("confirmed"),
+            func.count(Appointment.id).filter(Appointment.status == "COMPLETED").label("completed"),
+            func.count(Appointment.id).filter(Appointment.status == "CANCELLED").label("cancelled"),
+            func.count(Appointment.id).filter(Appointment.status == "DECLINED").label("declined"),
+        )
+        a_row = (await db.execute(appt_metrics_stmt)).one()
+        appointments_count = int(a_row.total or 0)
+        pending_appts_count = int(a_row.pending or 0)
+        confirmed_appts_count = int(a_row.confirmed or 0)
+        completed_appts_count = int(a_row.completed or 0)
+        cancelled_appts_count = int(a_row.cancelled or 0)
+        declined_appts_count = int(a_row.declined or 0)
 
         resolved_appts = completed_appts_count + cancelled_appts_count + declined_appts_count
         appointment_success_rate = round((completed_appts_count / resolved_appts) * 100, 1) if resolved_appts > 0 else 0.0
@@ -90,19 +76,19 @@ class AdminMetricsMixin:
             {"status": "DECLINED", "label": "Bị từ chối", "count": declined_appts_count, "pct": round((declined_appts_count / appt_total) * 100, 1), "color": "#64748b"},
         ]
 
-        inv_val_stmt = (
-            select(func.sum(ListingRevision.price_vnd))
-            .join(Listing, Listing.published_revision_id == ListingRevision.id)
-            .where(Listing.status == "PUBLISHED")
+        # Gộp tính tổng giá trị tin đang bán và đã bán vào 1 truy vấn
+        val_stmt = (
+            select(
+                func.coalesce(func.sum(ListingRevision.price_vnd).filter(Listing.status == "PUBLISHED"), 0).label("inv_val"),
+                func.coalesce(func.sum(ListingRevision.price_vnd).filter(Listing.status == "SOLD"), 0).label("sold_val"),
+            )
+            .select_from(Listing)
+            .join(ListingRevision, Listing.published_revision_id == ListingRevision.id)
+            .where(Listing.status.in_(["PUBLISHED", "SOLD"]))
         )
-        total_inv_val = (await db.scalar(inv_val_stmt)) or 0
-
-        sold_val_stmt = (
-            select(func.sum(ListingRevision.price_vnd))
-            .join(Listing, Listing.published_revision_id == ListingRevision.id)
-            .where(Listing.status == "SOLD")
-        )
-        total_sold_val = (await db.scalar(sold_val_stmt)) or 0
+        val_row = (await db.execute(val_stmt)).one()
+        total_inv_val = int(val_row.inv_val or 0)
+        total_sold_val = int(val_row.sold_val or 0)
 
         monthly_stmt = (
             select(
@@ -148,19 +134,27 @@ class AdminMetricsMixin:
             for i, r in enumerate(brand_rows)
         ]
 
-        prices_stmt = (
-            select(ListingRevision.price_vnd)
-            .join(Listing, Listing.published_revision_id == ListingRevision.id)
+        # Tính phân khúc giá bằng 1 truy vấn SQL có điều kiện (tránh load toàn bộ bản ghi vào RAM)
+        price_segment_stmt = (
+            select(
+                func.count().label("total"),
+                func.count().filter(ListingRevision.price_vnd < 400_000_000).label("c_under_400"),
+                func.count().filter(and_(ListingRevision.price_vnd >= 400_000_000, ListingRevision.price_vnd < 700_000_000)).label("c_400_700"),
+                func.count().filter(and_(ListingRevision.price_vnd >= 700_000_000, ListingRevision.price_vnd < 1_000_000_000)).label("c_700_1000"),
+                func.count().filter(and_(ListingRevision.price_vnd >= 1_000_000_000, ListingRevision.price_vnd < 2_000_000_000)).label("c_1000_2000"),
+                func.count().filter(ListingRevision.price_vnd >= 2_000_000_000).label("c_over_2000"),
+            )
+            .select_from(Listing)
+            .join(ListingRevision, Listing.published_revision_id == ListingRevision.id)
             .where(Listing.status.in_(["PUBLISHED", "SOLD"]))
         )
-        prices_res = await db.execute(prices_stmt)
-        prices = [row[0] for row in prices_res.all()]
-        total_p = len(prices) or 1
-        c_under_400 = sum(1 for p in prices if p < 400_000_000)
-        c_400_700 = sum(1 for p in prices if 400_000_000 <= p < 700_000_000)
-        c_700_1000 = sum(1 for p in prices if 700_000_000 <= p < 1_000_000_000)
-        c_1000_2000 = sum(1 for p in prices if 1_000_000_000 <= p < 2_000_000_000)
-        c_over_2000 = sum(1 for p in prices if p >= 2_000_000_000)
+        ps_row = (await db.execute(price_segment_stmt)).one()
+        total_p = int(ps_row.total or 0) or 1
+        c_under_400 = int(ps_row.c_under_400 or 0)
+        c_400_700 = int(ps_row.c_400_700 or 0)
+        c_700_1000 = int(ps_row.c_700_1000 or 0)
+        c_1000_2000 = int(ps_row.c_1000_2000 or 0)
+        c_over_2000 = int(ps_row.c_over_2000 or 0)
 
         price_segments = [
             {"segment": "< 400 triệu", "count": c_under_400, "label": "Phổ thông", "pct": round((c_under_400 / total_p) * 100, 1)},
@@ -190,13 +184,14 @@ class AdminMetricsMixin:
             for i, r in enumerate(body_rows)
         ]
 
-        return AdminMetricsResponse(
+        metrics_response = AdminMetricsResponse(
             total_users=users_count,
             total_listings=listings_count,
             pending_listings=pending_count,
             published_listings=published_count,
             sold_listings=sold_count,
             rejected_listings=rejected_count,
+            draft_listings=draft_count,
             total_appointments=appointments_count,
             pending_appointments=pending_appts_count,
             confirmed_appointments=confirmed_appts_count,
@@ -212,6 +207,9 @@ class AdminMetricsMixin:
             price_segments=price_segments,
             body_type_distribution=body_type_distribution,
         )
+
+        await fast_cache.set(cache_key, metrics_response, ttl_seconds=30)
+        return metrics_response
 
 
     # ==========================================

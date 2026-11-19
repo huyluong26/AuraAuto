@@ -29,6 +29,7 @@ from app.modules.ai.schemas import (
 )
 from app.modules.ai.gemini_client import gemini_client
 from app.modules.listings.schemas import ListingListItemResponse
+from app.shared.exceptions import ValidationException
 from ml_training.preprocess import extract_variant
 
 from app.modules.ai.valuation_engine import (
@@ -263,10 +264,33 @@ class AIService:
             )
 
         if market:
+            pos_factors = [f"Đối chiếu {market.comparable_count} tin thị trường có nguồn"]
+            neg_factors = ["Giá tin đăng có thể khác giá giao dịch thực tế"]
+
+            f_upper = (req.flood_status or "").upper()
+            if f_upper in {"CONFIRMED", "SUBMERGED"}:
+                neg_factors.append("Xe từng bị ngập nước / thủy kích - khấu trừ mạnh theo kiểm định kỹ thuật")
+            elif f_upper in {"SUSPECTED", "MINOR"}:
+                neg_factors.append("Xe có dấu hiệu nghi ngờ ngập nước - khấu trừ rủi ro ẩm sàn")
+
+            a_upper = (req.accident_status or "").upper()
+            if a_upper in {"MAJOR", "SEVERE"}:
+                neg_factors.append("Xe từng đâm đụng ảnh hưởng khung gầm sắt-xi - khấu trừ giá trị")
+            elif a_upper == "MODERATE":
+                neg_factors.append("Xe từng va chạm móp méo thân vỏ phụ tùng")
+
+            if req.engine_repaired is True:
+                neg_factors.append("Động cơ đã từng rã máy / đại tu")
+            if req.transmission_repaired is True:
+                neg_factors.append("Hộp số đã từng rã máy / đại tu")
+
+            if f_upper == "NONE" and a_upper == "NONE" and req.engine_repaired is False:
+                pos_factors.append("Cam kết xe nguyên bản: không đâm đụng, không ngập nước, máy số zin")
+
             explanation = GeminiExplanation(
                 summary=market.summary,
-                positive_factors=[f"Đối chiếu {market.comparable_count} tin thị trường có nguồn"],
-                negative_factors=["Giá tin đăng có thể khác giá giao dịch thực tế"],
+                positive_factors=pos_factors,
+                negative_factors=neg_factors,
                 market_advice="Đối chiếu phiên bản và tình trạng xe trước khi chốt giá.",
             )
         else:
@@ -277,6 +301,11 @@ class AIService:
                 odometer_km=req.odometer_km,
                 estimated_price_vnd=estimated_val,
                 allow_api=False,
+                flood_status=req.flood_status,
+                accident_status=req.accident_status,
+                service_history=req.service_history,
+                engine_repaired=req.engine_repaired,
+                transmission_repaired=req.transmission_repaired,
             )
 
         reason_parts = {
@@ -449,6 +478,9 @@ class AIService:
     ) -> CarRecognitionResponse:
         """Process car recognition when given an image URL or base64 string."""
         import base64
+        import socket
+        import ipaddress
+        import urllib.parse
         import httpx
 
         if req.image_base64:
@@ -464,11 +496,29 @@ class AIService:
             return await self.recognize_car_from_image(img_bytes, mime_type)
 
         if req.image_url:
-            async with httpx.AsyncClient(timeout=20.0) as client:
-                resp = await client.get(req.image_url)
+            parsed = urllib.parse.urlparse(req.image_url)
+            if parsed.scheme not in ("http", "https") or not parsed.hostname:
+                raise ValidationException("URL hình ảnh phải sử dụng giao thức http hoặc https hợp lệ.")
+
+            try:
+                addr_info = socket.getaddrinfo(parsed.hostname, None)
+                for entry in addr_info:
+                    ip_str = entry[4][0]
+                    ip = ipaddress.ip_address(ip_str)
+                    if ip.is_private or ip.is_loopback or ip.is_link_local or ip.is_reserved or ip.is_multicast or ip.is_unspecified:
+                        raise ValidationException("Địa chỉ mạng của URL không được phép truy cập (IP nội bộ hoặc không hợp lệ).")
+            except socket.gaierror:
+                raise ValidationException("Không thể phân giải tên miền hình ảnh.")
+
+            async with httpx.AsyncClient(timeout=15.0) as client:
+                resp = await client.get(req.image_url, follow_redirects=False)
                 if resp.status_code == 200:
+                    if len(resp.content) > 15 * 1024 * 1024:
+                        raise ValidationException("Dung lượng ảnh tải về vượt quá giới hạn 15MB.")
                     mime = resp.headers.get("content-type", "image/jpeg")
                     return await self.recognize_car_from_image(resp.content, mime, filename="url_car.jpg")
+                else:
+                    raise ValidationException(f"Không thể tải ảnh từ URL (HTTP {resp.status_code}).")
 
         return CarRecognitionResponse(
             confidence_score=0.0,

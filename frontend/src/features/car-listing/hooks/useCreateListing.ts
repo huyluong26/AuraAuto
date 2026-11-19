@@ -9,10 +9,12 @@ import {
   ModelItem,
   Coordinates,
 } from '../types';
-import { POWERTRAIN_OPTIONS, TRANSMISSION_OPTIONS, PROVINCE_COORDINATES } from '../constants';
+import { PROVINCE_COORDINATES } from '../constants';
 import { useListingPhotos } from './useListingPhotos';
 import { useListingTechnicalHistory } from './useListingTechnicalHistory';
 import { useListingPricing } from './useListingPricing';
+import { validateListingStep } from '../services/carListingValidation';
+import { submitNewListing } from '../services/carListingSubmissionService';
 
 export function useCreateListing() {
   // Step Navigation State (1 -> 5)
@@ -483,64 +485,26 @@ export function useCreateListing() {
   // Step Validation & Navigation
   const validateStep = useCallback(
     (step: CarListingStep): boolean => {
-      const newErrors: Record<string, string> = {};
-
-      if (step === 1) {
-        if (!brandName.trim()) {
-          newErrors.brand = 'Vui lòng chọn hoặc nhập Thương hiệu xe.';
-        }
-        if (!modelName.trim()) {
-          newErrors.model = 'Vui lòng chọn hoặc nhập Dòng xe.';
-        }
-        if (!manufactureYear || manufactureYear <= 1990) {
-          newErrors.manufactureYear = 'Vui lòng chọn năm sản xuất của xe.';
-        }
-        const cleanOdo = parseInt(odometerKm.replace(/\D/g, ''), 10);
-        if (!odometerKm.trim() || !cleanOdo || cleanOdo <= 0) {
-          newErrors.odometer = 'Vui lòng nhập số km ODO thực tế của xe (phải là số > 0).';
-        }
-        if (!provinceCode) {
-          newErrors.provinceCode = 'Vui lòng chọn Tỉnh / Thành phố xem xe.';
-        }
-      } else if (step === 2) {
-        if (!condition) {
-          newErrors.condition = 'Vui lòng chọn tình trạng sử dụng của xe.';
-        }
-        if (!origin) {
-          newErrors.origin = 'Vui lòng chọn nguồn gốc xuất xứ của xe.';
-        }
-        if (!bodyType) {
-          newErrors.bodyType = 'Vui lòng chọn kiểu dáng thân xe.';
-        }
-        if (!transmission) {
-          newErrors.transmission = 'Vui lòng chọn loại hộp số của xe.';
-        }
-        if (!powertrain) {
-          newErrors.powertrain = 'Vui lòng chọn loại nhiên liệu / động lực.';
-        }
-        if (!color.trim()) {
-          newErrors.color = 'Vui lòng chọn hoặc nhập màu sơn ngoại thất của xe.';
-        }
-      } else if (step === 3) {
-        const hasAnyPhoto = Object.values(photos.slotPhotos).some(Boolean) || photos.extraPhotos.length > 0;
-        if (!hasAnyPhoto) {
-          newErrors.photo = 'Vui lòng tải lên ít nhất 1 hình ảnh của xe để tiếp tục.';
-        }
-      } else if (step === 4) {
-        const cleanPrice = parseInt(pricing.priceVnd.replace(/\D/g, ''), 10);
-        if (!cleanPrice || cleanPrice <= 0) {
-          newErrors.price = 'Vui lòng nhập mức giá chuyển nhượng xe hợp lệ (phải là số > 0).';
-        }
-      }
+      const hasAnyPhoto = Object.values(photos.slotPhotos).some(Boolean) || photos.extraPhotos.length > 0;
+      const { isValid, errors: newErrors, firstError } = validateListingStep(step, {
+        brandName,
+        modelName,
+        manufactureYear,
+        odometerKm,
+        provinceCode,
+        condition,
+        origin,
+        bodyType,
+        transmission,
+        powertrain,
+        color,
+        hasAnyPhoto,
+        priceVnd: pricing.priceVnd,
+      });
 
       setErrors(newErrors);
-      if (Object.keys(newErrors).length > 0) {
-        const firstError = Object.values(newErrors)[0];
-        setErrorMessage(firstError);
-        return false;
-      }
-      setErrorMessage(null);
-      return true;
+      setErrorMessage(firstError);
+      return isValid;
     },
     [
       brandName,
@@ -603,143 +567,46 @@ export function useCreateListing() {
 
       setSubmitting(true);
       try {
-        let finalBrandId = brandId;
-        let finalModelId = modelId;
+        const result = await submitNewListing({
+          brandId,
+          modelId,
+          brandName,
+          modelName,
+          trim,
+          manufactureYear,
+          odometerKm,
+          bodyType,
+          powertrain,
+          transmission,
+          provinceCode,
+          locationAddress,
+          coordinates,
+          condition,
+          origin,
+          engineDisplacement,
+          drivetrain,
+          seats,
+          doors,
+          color,
+          interiorColor,
+          description,
+          priceVnd: pricing.priceVnd,
+          sellerType,
+          showroomName,
+          showroomPhone,
+          showroomId,
+          privacyShield,
+          tradeOptions: pricing.tradeOptions,
+          commitments: tech.commitments,
+          vehicleHistory: tech.vehicleHistory,
+          photos: photos.allPhotosWithLabels,
+          onStatusUpdate: setSubmitStatusText,
+        });
 
-        if (!finalBrandId || !finalModelId) {
-          setSubmitStatusText('Đang khởi tạo danh mục thương hiệu & dòng xe mới...');
-          try {
-            const resolved = await api.resolveBrandModel({
-              brand_name: brandName,
-              model_name: modelName,
-              body_type: bodyType || 'SEDAN',
-            });
-            if (resolved?.brand_id) {
-              finalBrandId = resolved.brand_id;
-              finalModelId = resolved.model_id || '';
-              setBrandId(finalBrandId);
-              if (finalModelId) setModelId(finalModelId);
-            } else {
-              throw new Error('Không thể đồng bộ danh mục xe mới trên cơ sở dữ liệu.');
-            }
-          } catch (resolveErr: any) {
-            setErrorMessage(resolveErr.message || 'Lỗi tạo mới thương hiệu hoặc dòng xe.');
-            setSubmitting(false);
-            return;
-          }
-        }
-
-        // Upload photos
-        const filesToUpload = photos.allPhotosWithLabels.map((item) => item.file);
-        let mediaItems: any[] = [];
-
-        if (filesToUpload.length > 0) {
-          setSubmitStatusText(`Đang tải ${filesToUpload.length} ảnh xe lên hệ thống lưu trữ...`);
-          try {
-            const uploadRes = await api.uploadMultipleMedia(filesToUpload);
-            if (Array.isArray(uploadRes)) {
-              mediaItems = uploadRes.map((item, idx) => ({
-                url: item.secure_url || item.url,
-                thumbnail_url: item.thumbnail_url || item.url,
-                media_type: 'IMAGE',
-                is_primary: idx === 0,
-                sort_order: idx,
-                label: photos.allPhotosWithLabels[idx]?.label || `Góc chụp #${idx + 1}`,
-              }));
-            }
-          } catch (uploadErr) {
-            console.warn('Upload media error:', uploadErr);
-          }
-        }
-
-        const matchedTrans = TRANSMISSION_OPTIONS.find((t) => t.id === transmission);
-        const matchedPower = POWERTRAIN_OPTIONS.find((p) => p.value === powertrain);
-        const parsedOdo = parseInt(odometerKm.replace(/\D/g, ''), 10) || 0;
-        const parsedPrice = parseInt(pricing.priceVnd.replace(/\D/g, ''), 10) || 0;
-        const fullTitle = `${brandName} ${modelName} ${trim} ${manufactureYear}`.replace(/\s+/g, ' ').trim();
-
-        const commitmentsList = [
-          tech.commitments.isOwner && 'Chính chủ cá nhân đứng tên',
-          tech.commitments.maintenanceHistory && 'Lịch sử bảo dưỡng chính hãng',
-          tech.commitments.noAccidentFlood && 'Cam kết không đâm đụng, thủy kích',
-          tech.commitments.readyInspection && 'Sẵn sàng giám định độc lập',
-        ]
-          .filter(Boolean)
-          .join('; ');
-
-        const tradeList = [
-          pricing.tradeOptions.negotiable && 'Có thương lượng nhẹ cho người mua thiện chí',
-          pricing.tradeOptions.tradeSuv && 'Hỗ trợ giao lưu bù trừ với dòng SUV',
-          privacyShield && 'Bảo vệ số điện thoại qua eKYC',
-        ]
-          .filter(Boolean)
-          .join('; ');
-
-        const coordsText =
-          coordinates.lat && coordinates.lng
-            ? `\nTọa độ GPS kiểm định: [${coordinates.lat.toFixed(6)}, ${coordinates.lng.toFixed(6)}]`
-            : '';
-
-        const fullDescription = [
-          description.trim(),
-          `\nThông số kỹ thuật: Động cơ ${engineDisplacement || 'Tiêu chuẩn'} | Dẫn động ${drivetrain || 'Tiêu chuẩn'} | ${seats ? `${seats} chỗ` : ''} | ${doors ? `${doors} cửa` : ''} | Xuất xứ ${origin} | Tình trạng ${condition === 'NEW' ? 'Xe mới' : 'Đã qua sử dụng'}`,
-          commitmentsList ? `Cam kết chủ xe: ${commitmentsList}` : '',
-          tradeList ? `Tùy chọn: ${tradeList}` : '',
-          locationAddress ? `Địa chỉ xem xe: ${locationAddress}` : '',
-          coordsText,
-        ]
-          .filter(Boolean)
-          .join('\n');
-
-        setSubmitStatusText('Đang nộp hồ sơ kiểm định xe lên hệ thống thẩm định...');
-        const payload: any = {
-          brand_id: finalBrandId,
-          model_id: finalModelId,
-          seller_type: sellerType,
-          showroom_id: showroomId || undefined,
-          custom_showroom_name: sellerType === 'SHOWROOM' ? showroomName.trim() : undefined,
-          custom_showroom_phone: sellerType === 'SHOWROOM' ? (showroomPhone.trim() || undefined) : undefined,
-          title: fullTitle,
-          price_vnd: parsedPrice,
-          manufacture_year: manufactureYear,
-          odometer_km: parsedOdo,
-          mileage_unknown: false,
-          condition: condition || 'USED',
-          body_type: bodyType || 'SEDAN',
-          fuel_type: matchedPower?.dbValue || 'GASOLINE',
-          transmission: matchedTrans?.value || 'AUTOMATIC',
-          origin: origin || 'Lắp ráp trong nước',
-          color: color.trim() || 'Trắng',
-          interior_color: interiorColor.trim() || 'Đen',
-          seats: seats || 5,
-          doors: doors || 4,
-          province_code: provinceCode || '79',
-          location_address: locationAddress.trim() || undefined,
-          description: fullDescription,
-          accident_status: tech.vehicleHistory.accidentStatus,
-          flood_status: tech.vehicleHistory.floodStatus,
-          service_history: tech.vehicleHistory.serviceHistory,
-          owner_count: tech.vehicleHistory.ownerCount || undefined,
-          repainted_parts_count: tech.vehicleHistory.repaintedPartsCount,
-          replaced_parts: tech.vehicleHistory.replacedParts.trim() || undefined,
-          engine_repaired: tech.vehicleHistory.engineRepaired,
-          transmission_repaired: tech.vehicleHistory.transmissionRepaired,
-          media: mediaItems,
-        };
-
-        const res = await api.createListing(payload);
-        const newListingId = res?.data?.id || null;
-        let finalStatus = res?.data?.status || null;
-        setCreatedListingId(newListingId);
-
-        if (newListingId && res?.data?.status === 'DRAFT') {
-          const submitRes = await api.submitListingForReview(newListingId).catch(() => null);
-          if (submitRes?.data?.status) {
-            finalStatus = submitRes.data.status;
-          }
-        }
-        setCreatedListingStatus(finalStatus);
-
+        if (result.brandId) setBrandId(result.brandId);
+        if (result.modelId) setModelId(result.modelId);
+        setCreatedListingId(result.listingId);
+        setCreatedListingStatus(result.status);
         setSuccess(true);
       } catch (err: any) {
         setErrorMessage(

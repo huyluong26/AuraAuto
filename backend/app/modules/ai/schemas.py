@@ -1,6 +1,6 @@
 import uuid
 from typing import Optional, List, Dict, Any
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 from app.modules.listings.schemas import ListingListItemResponse
 
 
@@ -31,13 +31,102 @@ class ValuationRequest(BaseModel):
     condition: Optional[str] = None  # NEW, USED
     # Các trường kiểm định lịch sử & tình trạng thực tế của xe
     accident_status: Optional[str] = None  # NONE, MINOR, MODERATE, MAJOR, UNKNOWN
-    flood_status: Optional[str] = None  # NONE, MINOR, SUBMERGED, UNKNOWN
-    service_history: Optional[str] = None  # FULL_DEALER, REGULAR_GARAGE, IRREGULAR, UNKNOWN
+    flood_status: Optional[str] = None  # NONE, SUSPECTED, CONFIRMED, SUBMERGED, MINOR, UNKNOWN
+    service_history: Optional[str] = None  # FULL, PARTIAL, NONE, FULL_DEALER, REGULAR_GARAGE, IRREGULAR, UNKNOWN
     engine_repaired: Optional[bool] = None  # Đã từng đại tu/rã máy
     transmission_repaired: Optional[bool] = None  # Đã từng đại tu hộp số
     owner_count: Optional[int] = None  # Số đời chủ
     repainted_parts_count: Optional[int] = None  # Số chi tiết sơn lại
     replaced_parts: Optional[str] = None
+
+    @field_validator("accident_status", mode="before")
+    @classmethod
+    def validate_accident_status(cls, v: Any) -> Optional[str]:
+        if v is None or v == "":
+            return None
+        if not isinstance(v, str):
+            return str(v)
+        v_upper = v.strip().upper()
+        if v_upper in {"UNKNOWN", "NONE", "MINOR", "MODERATE", "MAJOR"}:
+            return v_upper
+        v_lower = v.lower()
+        if any(w in v_lower for w in ["chưa từng", "không", "chưa va", "nguyên bản", "zin"]):
+            return "NONE"
+        if any(w in v_lower for w in ["nhẹ", "xước", "quẹt", "sát"]):
+            return "MINOR"
+        if any(w in v_lower for w in ["nặng", "khung gầm", "tai nạn", "ảnh hưởng", "sắt-xi"]):
+            return "MAJOR"
+        if any(w in v_lower for w in ["móp", "biến dạng", "thân vỏ"]):
+            return "MODERATE"
+        return v_upper
+
+    @field_validator("flood_status", mode="before")
+    @classmethod
+    def validate_flood_status(cls, v: Any) -> Optional[str]:
+        if v is None or v == "":
+            return None
+        if not isinstance(v, str):
+            return str(v)
+        v_upper = v.strip().upper()
+        if v_upper in {"UNKNOWN", "NONE", "SUSPECTED", "CONFIRMED", "SUBMERGED", "MINOR"}:
+            return v_upper
+        v_lower = v.lower()
+        if any(w in v_lower for w in ["không", "cam kết", "chưa từng", "zin", "chưa"]):
+            return "NONE"
+        if any(w in v_lower for w in ["nghi ngờ", "dấu hiệu", "ẩm sàn"]):
+            return "SUSPECTED"
+        if any(w in v_lower for w in ["ngập", "thủy kích", "khoang máy"]):
+            return "CONFIRMED"
+        return v_upper
+
+    @field_validator("service_history", mode="before")
+    @classmethod
+    def validate_service_history(cls, v: Any) -> Optional[str]:
+        if v is None or v == "":
+            return None
+        if not isinstance(v, str):
+            return str(v)
+        v_upper = v.strip().upper()
+        if v_upper in {"UNKNOWN", "NONE", "PARTIAL", "FULL", "FULL_DEALER", "REGULAR_GARAGE", "IRREGULAR"}:
+            return v_upper
+        v_lower = v.lower()
+        if any(w in v_lower for w in ["đầy đủ", "100%", "hãng", "chính hãng"]):
+            return "FULL"
+        if any(w in v_lower for w in ["một phần", "vài", "sổ theo dõi", "gara"]):
+            return "PARTIAL"
+        if any(w in v_lower for w in ["không có", "mất", "chưa rõ"]):
+            return "NONE"
+        return v_upper
+
+    @field_validator("owner_count", mode="before")
+    @classmethod
+    def validate_owner_count(cls, v: Any) -> Optional[int]:
+        if v is None or v == "":
+            return None
+        if isinstance(v, (int, float)):
+            v_int = int(v)
+            return max(1, min(20, v_int)) if v_int > 0 else None
+        if isinstance(v, str):
+            import re
+            m = re.search(r'\d+', v)
+            if m:
+                return max(1, min(20, int(m.group(0))))
+        return None
+
+    @field_validator("repainted_parts_count", mode="before")
+    @classmethod
+    def validate_repainted_parts_count(cls, v: Any) -> Optional[int]:
+        if v is None or v == "":
+            return None
+        if isinstance(v, (int, float)):
+            v_int = int(v)
+            return max(0, min(50, v_int))
+        if isinstance(v, str):
+            import re
+            m = re.search(r'\d+', v)
+            if m:
+                return max(0, min(50, int(m.group(0))))
+        return None
 
 
 class GeminiExplanation(BaseModel):

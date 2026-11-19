@@ -29,6 +29,7 @@ function AdminListingsContent() {
     setSearchKeyword,
     selectedIds,
     setSelectedIds,
+    tabCounts,
     loadListings,
     handleSelectAll,
     handleToggleSelect,
@@ -47,14 +48,14 @@ function AdminListingsContent() {
   // Status Tab definition with dynamic counts
   const STATUS_TABS = useMemo(() => {
     return [
-      { label: 'Tất cả bài đăng', value: 'ALL' },
-      { label: 'Chờ duyệt', value: 'PENDING_REVIEW' },
-      { label: 'Đang hiển thị', value: 'PUBLISHED' },
-      { label: 'Bị từ chối', value: 'REJECTED' },
-      { label: 'Đã giao dịch', value: 'SOLD' },
-      { label: 'Bản nháp', value: 'DRAFT' },
+      { label: 'Tất cả bài đăng', value: 'ALL', count: tabCounts.ALL },
+      { label: 'Chờ duyệt', value: 'PENDING_REVIEW', count: tabCounts.PENDING_REVIEW, badgeVariant: 'warning' as const },
+      { label: 'Đang hiển thị', value: 'PUBLISHED', count: tabCounts.PUBLISHED },
+      { label: 'Bị từ chối', value: 'REJECTED', count: tabCounts.REJECTED, badgeVariant: 'danger' as const },
+      { label: 'Đã giao dịch', value: 'SOLD', count: tabCounts.SOLD },
+      { label: 'Bản nháp', value: 'DRAFT', count: tabCounts.DRAFT },
     ];
-  }, []);
+  }, [tabCounts]);
 
   // Define Table Columns (Responsive, fits gracefully without horizontal clipping)
   const columns: TableColumn<AdminListingItem>[] = [

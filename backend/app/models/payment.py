@@ -30,8 +30,8 @@ class PromotionPackage(BaseModel):
 class PaymentTransaction(BaseModel):
     __tablename__ = "payment_transactions"
 
-    user_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
-    listing_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("listings.id", ondelete="CASCADE"), nullable=False)
+    user_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="RESTRICT"), nullable=False)
+    listing_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("listings.id", ondelete="RESTRICT"), nullable=False)
     order_code: Mapped[str] = mapped_column(String(64), unique=True, index=True, nullable=False)
     package_code: Mapped[str] = mapped_column(String(32), nullable=False)  # PROMO_1_DAY, PROMO_3_DAYS, PROMO_7_DAYS, PROMO_30_DAYS
     package_days: Mapped[int] = mapped_column(Integer, nullable=False)

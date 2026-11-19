@@ -20,6 +20,8 @@ export interface CurrentUser {
   province_name?: string;
   address?: string;
   account_type?: 'INDIVIDUAL' | 'SHOWROOM';
+  email_verified_at?: string | null;
+  created_at?: string;
   showroom?: {
     id: string;
     name: string;

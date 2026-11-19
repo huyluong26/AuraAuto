@@ -58,7 +58,7 @@ class AuthService:
             address=data.address,
             role="USER",
             status="ACTIVE",
-            email_verified_at=datetime.now(timezone.utc),
+            email_verified_at=None,
         )
         self.db.add(user)
         await self.db.flush()

@@ -112,6 +112,24 @@ export const appointmentsApi = {
     return res.json();
   },
 
+  async markAppointmentSold(id: string): Promise<any> {
+    const token = typeof window !== 'undefined' ? localStorage.getItem('access_token') : null;
+    if (!token) throw new Error('Chưa đăng nhập');
+    const res = await authFetch(`${API_BASE}/appointments/${id}/mark-sold`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!res.ok) {
+      let errMsg = 'Không thể xác nhận bán xe';
+      try {
+        const err = await res.json();
+        errMsg = err?.error?.message || err?.message || err?.detail || 'Không thể xác nhận bán xe';
+      } catch {}
+      throw new Error(errMsg);
+    }
+    return res.json();
+  },
+
   // AI Pricing & Search,
 
 };

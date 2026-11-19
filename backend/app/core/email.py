@@ -108,36 +108,110 @@ def render_appointment_alert_html(recipient_name: str, car_title: str, scheduled
     return _wrap_base_template("Thông báo lịch hẹn xem xe", content)
 
 
-def render_listing_status_html(seller_name: str, car_title: str, status_text: str, note: Optional[str] = None) -> str:
-    is_approved = status_text.upper() in ("PUBLISHED", "APPROVED")
-    status_label = "ĐÃ ĐƯỢC PHÊ DUYỆT XUẤT BẢN" if is_approved else "CẦN CHỈNH SỬA BỔ SUNG"
-    badge_color = "#16a34a" if is_approved else "#dc2626"
-    badge_bg = "#dcfce7" if is_approved else "#fee2e2"
+def render_listing_status_html(
+    seller_name: str,
+    car_title: str,
+    status_text: str,
+    note: Optional[str] = None,
+    listing_id: Optional[str] = None,
+) -> str:
+    st = status_text.upper()
+    is_approved = st in ("PUBLISHED", "APPROVED")
+    is_pending = st in ("PENDING", "PENDING_REVIEW")
+    is_rejected = st in ("REJECTED",)
+    is_removed = st in ("REMOVED", "TAKEDOWN")
+
+    if is_approved:
+        status_label = "ĐÃ ĐƯỢC PHÊ DUYỆT XUẤT BẢN"
+        badge_color = "#15803d"
+        badge_bg = "#dcfce7"
+        badge_border = "#86efac"
+        heading = "Tin Đăng Của Bạn Đã Được Phê Duyệt!"
+        intro = f"Tin đăng chiếc <strong>{car_title}</strong> của bạn đã vượt qua khâu kiểm định chất lượng và hiện đã được công khai trên sàn giao dịch AuraAuto."
+        btn_text = "Xem Tin Đăng Trên Web"
+        btn_url = f"{settings.FRONTEND_URL}/xe/{listing_id}" if listing_id else f"{settings.FRONTEND_URL}/quan-ly-tin"
+        footer_msg = "Xe của bạn hiện đã hiển thị công khai tới hàng ngàn khách hàng tiềm năng trên AuraAuto."
+    elif is_pending:
+        status_label = "ĐANG CHỜ DUYỆT HỒ SƠ"
+        badge_color = "#b45309"
+        badge_bg = "#fef3c7"
+        badge_border = "#fde68a"
+        heading = "Hồ Sơ Tin Đăng Đang Chờ Phê Duyệt"
+        intro = f"Chúng tôi đã tiếp nhận hồ sơ đăng bán xe <strong>{car_title}</strong> của bạn. Đội ngũ kiểm định viên AuraAuto sẽ tiến hành kiểm định thông số và cam kết kỹ thuật trong vòng 24 giờ làm việc."
+        btn_text = "Theo Dõi Tại Quản Lý Tin"
+        btn_url = f"{settings.FRONTEND_URL}/quan-ly-tin"
+        footer_msg = "Bạn có thể theo dõi trạng thái kiểm duyệt tại trang Quản lý tin đăng cá nhân."
+    elif is_rejected:
+        status_label = "CẦN CHỈNH SỬA BỔ SUNG"
+        badge_color = "#b91c1c"
+        badge_bg = "#fee2e2"
+        badge_border = "#fecaca"
+        heading = "Yêu Cầu Chỉnh Sửa / Bổ Sung Thông Tin Xe"
+        intro = f"Hồ sơ đăng bán xe <strong>{car_title}</strong> của bạn tạm thời chưa được phê duyệt do cần hoàn thiện thêm một số chi tiết kỹ thuật hoặc giấy tờ xe."
+        btn_text = "Chỉnh Sửa & Gửi Duyệt Lại"
+        btn_url = f"{settings.FRONTEND_URL}/quan-ly-tin"
+        footer_msg = "Vui lòng đăng nhập vào tài khoản để cập nhật thông tin theo yêu cầu của kiểm định viên."
+    elif is_removed:
+        status_label = "ĐÃ GỠ BỎ KHỎI SÀN"
+        badge_color = "#475569"
+        badge_bg = "#f1f5f9"
+        badge_border = "#cbd5e1"
+        heading = "Thông Báo Gỡ Bỏ Tin Đăng Xe"
+        intro = f"Tin đăng xe <strong>{car_title}</strong> của bạn đã được hạ xuống khỏi danh mục hiển thị công khai trên AuraAuto."
+        btn_text = "Truy Cập Quản Lý Tin Đăng"
+        btn_url = f"{settings.FRONTEND_URL}/quan-ly-tin"
+        footer_msg = "Nếu có bất kỳ thắc mắc nào, vui lòng liên hệ bộ phận hỗ trợ khách hàng AuraAuto."
+    else:
+        status_label = status_text.upper()
+        badge_color = "#475569"
+        badge_bg = "#f1f5f9"
+        badge_border = "#cbd5e1"
+        heading = "Cập Nhật Trạng Thái Tin Đăng Xe"
+        intro = f"Tin đăng xe <strong>{car_title}</strong> của bạn vừa có cập nhật trạng thái mới: <strong>{status_text}</strong>."
+        btn_text = "Xem Quản Lý Tin"
+        btn_url = f"{settings.FRONTEND_URL}/quan-ly-tin"
+        footer_msg = "Truy cập tài khoản AuraAuto để xem thông tin chi tiết."
 
     note_section = ""
     if note:
         note_section = f"""
-        <div style="margin-top: 16px; padding: 14px; background-color: #f8fafc; border-radius: 8px; border: 1px dashed #cbd5e1;">
-          <strong style="color: #475569;">Ghi chú từ bộ phận kiểm duyệt:</strong>
-          <p style="margin: 6px 0 0; color: #334155; font-size: 14px;">{note}</p>
+        <div style="margin: 20px 0; padding: 16px 20px; background-color: #f8fafc; border-radius: 10px; border: 1px dashed #cbd5e1;">
+          <strong style="color: #475569; font-size: 13px; text-transform: uppercase; letter-spacing: 0.5px;">Ghi chú từ bộ phận kiểm duyệt:</strong>
+          <p style="margin: 8px 0 0; color: #1e293b; font-size: 14px; line-height: 1.5;">{note}</p>
         </div>
         """
 
+    secondary_link = ""
+    if is_approved and listing_id:
+        secondary_link = f"""
+        <p style="margin: 0 0 20px; font-size: 13px; text-align: center; color: #64748b;">
+          Hoặc truy cập <a href="{settings.FRONTEND_URL}/quan-ly-tin" style="color: #2563eb; text-decoration: underline;">Trang Quản lý tin đăng</a> để chỉnh sửa hoặc theo dõi tương tác người mua.
+        </p>
+        """
+
     content = f"""
-      <h2 style="margin: 0 0 16px; font-size: 20px; font-weight: 700; color: #0f172a;">Cập Nhật Trạng Thái Tin Đăng Xe</h2>
+      <h2 style="margin: 0 0 16px; font-size: 20px; font-weight: 700; color: #0f172a;">{heading}</h2>
       <p style="margin: 0 0 16px;">Chào {seller_name},</p>
-      <p style="margin: 0 0 20px;">Tin đăng chiếc <strong>{car_title}</strong> của bạn đã có kết quả kiểm định:</p>
+      <p style="margin: 0 0 20px; line-height: 1.6;">{intro}</p>
       
       <div style="text-align: center; margin: 24px 0;">
-        <span style="background-color: {badge_bg}; color: {badge_color}; padding: 10px 24px; border-radius: 20px; font-weight: 700; font-size: 14px; display: inline-block; letter-spacing: 0.5px;">
+        <span style="background-color: {badge_bg}; color: {badge_color}; border: 1px solid {badge_border}; padding: 10px 24px; border-radius: 20px; font-weight: 700; font-size: 13px; display: inline-block; letter-spacing: 0.5px;">
           {status_label}
         </span>
       </div>
       
       {note_section}
+
+      <div style="text-align: center; margin: 28px 0 16px;">
+        <a href="{btn_url}" style="background-color: #0f172a; color: #ffffff; padding: 14px 32px; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 14px; display: inline-block; letter-spacing: 0.5px; border: 1px solid #eab308; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+          {btn_text}
+        </a>
+      </div>
+
+      {secondary_link}
       
-      <p style="margin: 24px 0 0; font-size: 14px; color: #64748b;">
-        { 'Xe của bạn hiện đã hiển thị công khai tới hàng ngàn khách hàng tiềm năng trên AuraAuto.' if is_approved else 'Vui lòng đăng nhập vào tài khoản để cập nhật thông tin theo yêu cầu.' }
+      <p style="margin: 24px 0 0; font-size: 14px; color: #64748b; line-height: 1.5;">
+        {footer_msg}
       </p>
     """
     return _wrap_base_template("Trạng thái tin đăng xe AuraAuto", content)

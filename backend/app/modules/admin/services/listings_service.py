@@ -1,58 +1,28 @@
 import uuid
-from datetime import datetime, timezone, timedelta
+import asyncio
+from datetime import datetime, timezone
 from typing import List, Optional
 from fastapi import BackgroundTasks
-from sqlalchemy import select, func, desc, or_
+from sqlalchemy import select, func, or_
 from sqlalchemy.orm import selectinload
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.security import get_password_hash
-from app.core.email import send_email_sync, render_listing_status_html
-from app.core.cleanup import run_system_maintenance
+from app.core.email import send_email, send_email_sync, render_listing_status_html
 from app.core.cache import fast_cache
 from app.modules.chats.ws_manager import ws_manager
 from app.models.user import User
-from app.models.listing import Listing, ListingRevision, ListingStatusEvent, ListingMedia
-from app.models.appointment import Appointment, AppointmentEvent
-from app.models.showroom import Showroom
+from app.models.listing import Listing, ListingRevision, ListingStatusEvent
 from app.models.notification import Notification
-from app.models.catalog import VehicleBrand
-from app.models.payment import PaymentTransaction, PromotionPackage
-from app.modules.payments.service import payment_service
+from app.models.payment import PaymentTransaction
 from app.modules.admin.schemas import (
-    AdminMetricsResponse,
-    RejectListingRequest,
-    TakeDownListingRequest,
-    SubmitInspectionRequest,
-    AdminUpdateListingRequest,
-    VerifyShowroomRequest,
-    UpdateUserStatusRequest,
-    BulkUpdateUserStatusRequest,
-    BulkUpdateShowroomStatusRequest,
-    BulkVerifyShowroomRequest,
-    BulkDeleteShowroomRequest,
-    UpdateUserRoleRequest,
-    AdminCreateUserRequest,
-    AdminUpdateUserRequest,
-    AdminCreateShowroomRequest,
-    AdminUpdateShowroomRequest,
-    AdminListingItemResponse,
     AdminListingDetailResponse,
-    AdminAppointmentItemResponse,
-    AdminAppointmentParticipant,
-    AdminAppointmentListingBrief,
-    AdminCancelAppointmentRequest,
-    AdminPromotionPackageResponse,
-    AdminCreatePromotionPackageRequest,
-    AdminUpdatePromotionPackageRequest,
-    AdminFeaturedListingItemResponse,
-    AdminGrantFeaturedRequest,
-    AdminRevokeFeaturedRequest,
-    AdminPaymentTransactionItemResponse,
-    AdminPromotionsOverviewResponse,
+    AdminListingItemResponse,
+    AdminUpdateListingRequest,
+    RejectListingRequest,
+    SubmitInspectionRequest,
+    TakeDownListingRequest,
 )
-from app.modules.auth.schemas import UserBriefResponse, ShowroomBriefResponse
-from app.shared.exceptions import NotFoundException, ConflictException, ForbiddenException
+from app.shared.exceptions import NotFoundException
 from app.shared.schemas import SuccessResponse
 
 
@@ -152,6 +122,38 @@ class AdminListingsMixin:
             )
 
         return items
+
+    async def get_listings_tab_counts(self) -> dict:
+        cache_key = "listings:admin_tab_counts"
+        cached = await fast_cache.get(cache_key)
+        if cached is not None:
+            return cached
+
+        db = self.db
+        stmt = select(
+            func.count(Listing.id).label("all_cnt"),
+            func.count(Listing.id).filter(
+                or_(
+                    Listing.status == "PENDING_REVIEW",
+                    Listing.revisions.any(ListingRevision.review_status == "PENDING"),
+                )
+            ).label("pending_cnt"),
+            func.count(Listing.id).filter(Listing.status == "PUBLISHED").label("published_cnt"),
+            func.count(Listing.id).filter(Listing.status == "REJECTED").label("rejected_cnt"),
+            func.count(Listing.id).filter(Listing.status == "SOLD").label("sold_cnt"),
+            func.count(Listing.id).filter(Listing.status == "DRAFT").label("draft_cnt"),
+        )
+        row = (await db.execute(stmt)).one()
+        counts = {
+            "ALL": int(row.all_cnt or 0),
+            "PENDING_REVIEW": int(row.pending_cnt or 0),
+            "PUBLISHED": int(row.published_cnt or 0),
+            "REJECTED": int(row.rejected_cnt or 0),
+            "SOLD": int(row.sold_cnt or 0),
+            "DRAFT": int(row.draft_cnt or 0),
+        }
+        await fast_cache.set(cache_key, counts, ttl_seconds=15)
+        return counts
 
     async def get_listing_detail(self, id: uuid.UUID) -> AdminListingDetailResponse:
         db = self.db
@@ -330,22 +332,52 @@ class AdminListingsMixin:
         )
         db.add(noti)
 
-        if background_tasks and listing.seller and listing.seller.email:
+        # Gửi email thông báo phê duyệt tới người bán
+        seller_email = listing.seller.email if listing.seller else None
+        seller_name = listing.seller.display_name if listing.seller else "Quý khách"
+        if not seller_email and listing.seller_user_id:
+            seller_user = await db.get(User, listing.seller_user_id)
+            if seller_user and seller_user.email:
+                seller_email = seller_user.email
+                seller_name = seller_user.display_name
+
+        if seller_email:
             html = render_listing_status_html(
-                listing.seller.display_name,
+                seller_name,
                 rev.title,
                 "PUBLISHED",
                 f"Tin đăng của bạn (phiên bản {rev.revision_no}) đã được kiểm duyệt hợp lệ và sẵn sàng tiếp cận người mua.",
+                str(listing.id),
             )
-            background_tasks.add_task(
-                send_email_sync,
-                listing.seller.email,
-                f"AuraAuto - Tin đăng '{rev.title}' đã được phê duyệt",
-                html,
-            )
+            subject = f"AuraAuto - Chúc mừng! Tin đăng '{rev.title}' đã được phê duyệt thành công"
+            if background_tasks:
+                background_tasks.add_task(send_email_sync, seller_email, subject, html)
+            else:
+                import asyncio
+                asyncio.create_task(send_email(seller_email, subject, html))
 
         await db.commit()
         await fast_cache.invalidate_prefix("listings:")
+
+        # Real-time WebSocket push notification immediately to seller
+        try:
+            await ws_manager.send_notification_to_user(
+                listing.seller_user_id,
+                {
+                    "id": str(noti.id),
+                    "title": noti.title,
+                    "body": noti.body,
+                    "type": "LISTING_STATUS_CHANGE",
+                    "status": "PUBLISHED",
+                    "reference_type": "listing",
+                    "reference_id": str(listing.id),
+                    "listing_id": str(listing.id),
+                    "listing_title": rev.title,
+                },
+            )
+        except Exception:
+            pass
+
         return SuccessResponse(message="Tin đăng đã được duyệt và công khai thành công!")
 
     async def reject_listing(self, id: uuid.UUID, data: RejectListingRequest, background_tasks: Optional[BackgroundTasks] = None) -> SuccessResponse:
@@ -397,22 +429,53 @@ class AdminListingsMixin:
         )
         db.add(noti)
 
-        if background_tasks and listing.seller and listing.seller.email:
+        # Gửi email thông báo từ chối duyệt tới người bán
+        seller_email = listing.seller.email if listing.seller else None
+        seller_name = listing.seller.display_name if listing.seller else "Quý khách"
+        if not seller_email and listing.seller_user_id:
+            seller_user = await db.get(User, listing.seller_user_id)
+            if seller_user and seller_user.email:
+                seller_email = seller_user.email
+                seller_name = seller_user.display_name
+
+        if seller_email:
             html = render_listing_status_html(
-                listing.seller.display_name,
+                seller_name,
                 rev.title,
                 "REJECTED",
-                f"Lý do từ chối: {data.reason}. Vui lòng chỉnh sửa và gửi lại yêu cầu duyệt.",
+                f"Lý do từ chối: {data.reason}. Vui lòng đăng nhập tài khoản để chỉnh sửa thông tin và gửi lại yêu cầu duyệt.",
+                str(listing.id),
             )
-            background_tasks.add_task(
-                send_email_sync,
-                listing.seller.email,
-                f"AuraAuto - Cần chỉnh sửa tin đăng '{rev.title}'",
-                html,
-            )
+            subject = f"AuraAuto - Yêu cầu chỉnh sửa / bổ sung tin đăng '{rev.title}'"
+            if background_tasks:
+                background_tasks.add_task(send_email_sync, seller_email, subject, html)
+            else:
+                import asyncio
+                asyncio.create_task(send_email(seller_email, subject, html))
 
         await db.commit()
         await fast_cache.invalidate_prefix("listings:")
+
+        # Real-time WebSocket push notification immediately to seller
+        try:
+            await ws_manager.send_notification_to_user(
+                listing.seller_user_id,
+                {
+                    "id": str(noti.id),
+                    "title": noti.title,
+                    "body": noti.body,
+                    "type": "LISTING_STATUS_CHANGE",
+                    "status": "REJECTED",
+                    "reference_type": "listing",
+                    "reference_id": str(listing.id),
+                    "listing_id": str(listing.id),
+                    "listing_title": rev.title,
+                    "rejection_reason": data.reason,
+                },
+            )
+        except Exception:
+            pass
+
         return SuccessResponse(message="Đã cập nhật trạng thái từ chối tin đăng thành công!")
 
     async def takedown_listing(self, id: uuid.UUID, data: TakeDownListingRequest, background_tasks: Optional[BackgroundTasks] = None) -> SuccessResponse:
@@ -454,21 +517,52 @@ class AdminListingsMixin:
         )
         db.add(noti)
 
-        if background_tasks and listing.seller and listing.seller.email:
+        # Gửi email thông báo gỡ tin tới người bán
+        seller_email = listing.seller.email if listing.seller else None
+        seller_name = listing.seller.display_name if listing.seller else "Quý khách"
+        if not seller_email and listing.seller_user_id:
+            seller_user = await db.get(User, listing.seller_user_id)
+            if seller_user and seller_user.email:
+                seller_email = seller_user.email
+                seller_name = seller_user.display_name
+
+        if seller_email:
             html = render_listing_status_html(
-                listing.seller.display_name,
+                seller_name,
                 car_title,
                 "REMOVED",
                 f"Tin đăng của bạn đã bị gỡ khỏi sàn. Lý do: {data.reason}",
+                str(listing.id),
             )
-            background_tasks.add_task(
-                send_email_sync,
-                listing.seller.email,
-                f"AuraAuto - Thông báo gỡ tin đăng '{car_title}'",
-                html,
-            )
+            subject = f"AuraAuto - Thông báo gỡ bỏ tin đăng '{car_title}'"
+            if background_tasks:
+                background_tasks.add_task(send_email_sync, seller_email, subject, html)
+            else:
+                import asyncio
+                asyncio.create_task(send_email(seller_email, subject, html))
 
         await db.commit()
+
+        # Real-time WebSocket push notification immediately to seller
+        try:
+            await ws_manager.send_notification_to_user(
+                listing.seller_user_id,
+                {
+                    "id": str(noti.id),
+                    "title": noti.title,
+                    "body": noti.body,
+                    "type": "LISTING_STATUS_CHANGE",
+                    "status": "REMOVED",
+                    "reference_type": "listing",
+                    "reference_id": str(listing.id),
+                    "listing_id": str(listing.id),
+                    "listing_title": car_title,
+                    "reason": data.reason,
+                },
+            )
+        except Exception:
+            pass
+
         return SuccessResponse(message="Đã gỡ bỏ tin đăng thành công!")
 
     async def delete_listing(self, id: uuid.UUID) -> SuccessResponse:
@@ -478,6 +572,13 @@ class AdminListingsMixin:
         listing = res.scalar_one_or_none()
         if not listing:
             raise NotFoundException("Tin đăng không tồn tại")
+
+        tx_stmt = select(func.count(PaymentTransaction.id)).where(PaymentTransaction.listing_id == id)
+        has_tx = (await db.scalar(tx_stmt)) or 0
+        if has_tx > 0:
+            listing.status = "REMOVED"
+            await db.commit()
+            return SuccessResponse(message="Tin đăng có lịch sử giao dịch thanh toán đã được chuyển sang trạng thái đã gỡ (Bảo toàn dữ liệu hóa đơn).")
 
         await db.delete(listing)
         await db.commit()

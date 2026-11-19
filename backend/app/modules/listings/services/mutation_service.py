@@ -1,11 +1,14 @@
 import uuid
+import asyncio
 from datetime import datetime, timezone
 from typing import List, Optional, Tuple
+from fastapi import BackgroundTasks
 from sqlalchemy import select, func, and_, or_, desc, asc, case
 from sqlalchemy.orm import selectinload
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.cache import fast_cache
+from app.core.email import send_email_sync, send_email, render_listing_status_html
 from app.models.listing import Listing, ListingRevision, ListingMedia, ListingStatusEvent
 from app.models.appointment import Appointment, AppointmentEvent
 from app.models.notification import Notification
@@ -96,13 +99,14 @@ class ListingMutationMixin:
         self.db.add(revision)
         await self.db.flush()
 
+        chosen_primary_idx = next((i for i, m in enumerate(data.media) if m.is_primary), 0) if data.media else 0
         for idx, m in enumerate(data.media):
             media_item = ListingMedia(
                 revision_id=revision.id,
                 url=m.url,
                 thumbnail_url=m.thumbnail_url,
                 media_type=m.media_type,
-                is_primary=m.is_primary if idx != 0 else True,
+                is_primary=(idx == chosen_primary_idx),
                 sort_order=m.sort_order or idx,
                 label=m.label,
             )
@@ -120,7 +124,12 @@ class ListingMutationMixin:
         await self.db.refresh(listing)
         return listing
 
-    async def submit_for_review(self, listing_id: uuid.UUID, user: User) -> Listing:
+    async def submit_for_review(
+        self,
+        listing_id: uuid.UUID,
+        user: User,
+        background_tasks: Optional[BackgroundTasks] = None,
+    ) -> Listing:
         stmt = (
             select(Listing)
             .options(selectinload(Listing.revisions))
@@ -158,6 +167,21 @@ class ListingMutationMixin:
                 to_status="PUBLISHED",
                 reason="Quản trị viên đăng tin - Hệ thống tự động phê duyệt và xuất bản trực tiếp",
             )
+
+            # Gửi email thông báo xuất bản thành công cho nhân sự/admin
+            if user.email:
+                html = render_listing_status_html(
+                    user.display_name,
+                    latest_rev.title,
+                    "PUBLISHED",
+                    "Tin đăng xe của bạn đã được phê duyệt tự động và xuất bản trực tiếp lên sàn AuraAuto.",
+                    str(listing.id),
+                )
+                subject = f"AuraAuto - Chúc mừng! Tin đăng '{latest_rev.title}' đã xuất bản"
+                if background_tasks:
+                    background_tasks.add_task(send_email_sync, user.email, subject, html)
+                else:
+                    asyncio.create_task(send_email(user.email, subject, html))
         else:
             listing.status = "PENDING_REVIEW"
             latest_rev.review_status = "PENDING"
@@ -169,9 +193,58 @@ class ListingMutationMixin:
                 to_status="PENDING_REVIEW",
                 reason="Người bán gửi yêu cầu duyệt tin",
             )
+
+            # Tạo thông báo hệ thống cho khách hàng
+            noti = Notification(
+                id=uuid.uuid4(),
+                user_id=user.id,
+                title="Tin đăng xe đang chờ duyệt",
+                body=f"Xe '{latest_rev.title}' đã gửi tới Ban Quản Trị và đang được kiểm định trong vòng 24 giờ.",
+                type="SYSTEM",
+                reference_type="listing",
+                reference_id=listing.id,
+            )
+            self.db.add(noti)
+
+            # Gửi email xác nhận đang chờ duyệt cho khách hàng
+            if user.email:
+                html = render_listing_status_html(
+                    user.display_name,
+                    latest_rev.title,
+                    "PENDING_REVIEW",
+                    "Hồ sơ tin đăng của bạn đã được gửi tới Ban Quản Trị. Đội ngũ kiểm định viên AuraAuto sẽ tiến hành kiểm định kỹ thuật và phản hồi trong vòng 24 giờ làm việc.",
+                    str(listing.id),
+                )
+                subject = f"AuraAuto - Hồ sơ tin đăng '{latest_rev.title}' đang chờ phê duyệt"
+                if background_tasks:
+                    background_tasks.add_task(send_email_sync, user.email, subject, html)
+                else:
+                    asyncio.create_task(send_email(user.email, subject, html))
+
         self.db.add(event)
         await self.db.commit()
         await self.db.refresh(listing)
+
+        if not is_internal_staff:
+            try:
+                from app.modules.chats.ws_manager import ws_manager
+                await ws_manager.send_notification_to_user(
+                    user.id,
+                    {
+                        "id": str(noti.id),
+                        "title": noti.title,
+                        "body": noti.body,
+                        "type": "LISTING_STATUS_CHANGE",
+                        "status": "PENDING_REVIEW",
+                        "reference_type": "listing",
+                        "reference_id": str(listing.id),
+                        "listing_id": str(listing.id),
+                        "listing_title": latest_rev.title,
+                    },
+                )
+            except Exception:
+                pass
+
         return listing
 
 
@@ -369,6 +442,7 @@ class ListingMutationMixin:
         listing_id: uuid.UUID,
         data: UpdateListingRequest,
         user: User,
+        background_tasks: Optional[BackgroundTasks] = None,
     ) -> Tuple[Listing, ListingRevision]:
         """
         Cập nhật toàn diện tin đăng xe:
@@ -434,13 +508,14 @@ class ListingMutationMixin:
                 await self.db.delete(old_m)
             await self.db.flush()
 
+            chosen_primary_idx = next((i for i, m in enumerate(data.media) if m.is_primary), 0) if data.media else 0
             for idx, m in enumerate(data.media):
                 media_item = ListingMedia(
                     revision_id=target_rev.id,
                     url=m.url,
                     thumbnail_url=m.thumbnail_url,
                     media_type=m.media_type,
-                    is_primary=m.is_primary if idx != 0 else True,
+                    is_primary=(idx == chosen_primary_idx),
                     sort_order=m.sort_order if m.sort_order is not None else idx,
                     label=m.label,
                 )
@@ -487,13 +562,14 @@ class ListingMutationMixin:
             self.db.add(target_rev)
             await self.db.flush()
 
+            chosen_primary_idx = next((i for i, m in enumerate(data.media) if m.is_primary), 0) if data.media else 0
             for idx, m in enumerate(data.media):
                 media_item = ListingMedia(
                     revision_id=target_rev.id,
                     url=m.url,
                     thumbnail_url=m.thumbnail_url,
                     media_type=m.media_type,
-                    is_primary=m.is_primary if idx != 0 else True,
+                    is_primary=(idx == chosen_primary_idx),
                     sort_order=m.sort_order if m.sort_order is not None else idx,
                     label=m.label,
                 )
@@ -520,6 +596,36 @@ class ListingMutationMixin:
                 to_status="PUBLISHED",
                 reason=f"Quản trị viên cập nhật tin xe (Phiên bản #{target_rev.revision_no}) - Tự động duyệt và xuất bản trực tiếp",
             )
+
+            # Tạo thông báo hệ thống cho chủ xe (seller)
+            target_user_id = listing.seller_user_id
+            seller_name = listing.seller.display_name if listing.seller else "Quý khách"
+            seller_email = listing.seller.email if listing.seller else None
+
+            noti = Notification(
+                id=uuid.uuid4(),
+                user_id=target_user_id,
+                title="Tin đăng đã được quản trị viên cập nhật",
+                body=f"Bản cập nhật xe '{target_rev.title}' (phiên bản #{target_rev.revision_no}) đã được quản trị viên phê duyệt và xuất bản trực tiếp.",
+                type="SYSTEM",
+                reference_type="listing",
+                reference_id=listing.id,
+            )
+            self.db.add(noti)
+
+            if seller_email:
+                html = render_listing_status_html(
+                    seller_name,
+                    target_rev.title,
+                    "PUBLISHED",
+                    f"Bản cập nhật thông tin xe (Phiên bản #{target_rev.revision_no}) đã được kiểm định và xuất bản trực tiếp lên sàn AuraAuto.",
+                    str(listing.id),
+                )
+                subject = f"AuraAuto - Bản cập nhật tin đăng '{target_rev.title}' đã xuất bản"
+                if background_tasks:
+                    background_tasks.add_task(send_email_sync, seller_email, subject, html)
+                else:
+                    asyncio.create_task(send_email(seller_email, subject, html))
         else:
             # Nếu tin trước đó là DRAFT hoặc REJECTED, chuyển sang PENDING_REVIEW
             if listing.status in ("DRAFT", "REJECTED"):
@@ -534,6 +640,52 @@ class ListingMutationMixin:
                 to_status=listing.status,
                 reason=f"Người bán gửi bản chỉnh sửa tin đăng (Phiên bản #{target_rev.revision_no}) chờ phê duyệt",
             )
+
+            # Tạo thông báo hệ thống cho khách hàng
+            noti = Notification(
+                id=uuid.uuid4(),
+                user_id=user.id,
+                title="Bản chỉnh sửa tin đăng đang chờ duyệt",
+                body=f"Bản cập nhật xe '{target_rev.title}' (lần #{target_rev.revision_no}) đã được gửi tới Ban Quản Trị thẩm định lại.",
+                type="SYSTEM",
+                reference_type="listing",
+                reference_id=listing.id,
+            )
+            self.db.add(noti)
+
+            if user.email:
+                html = render_listing_status_html(
+                    user.display_name,
+                    target_rev.title,
+                    "PENDING_REVIEW",
+                    f"Bản chỉnh sửa thông tin xe (Phiên bản #{target_rev.revision_no}) đã được gửi tới Ban Quản Trị để thẩm định lại.",
+                    str(listing.id),
+                )
+                subject = f"AuraAuto - Bản chỉnh sửa tin đăng '{target_rev.title}' đang chờ phê duyệt"
+                if background_tasks:
+                    background_tasks.add_task(send_email_sync, user.email, subject, html)
+                else:
+                    asyncio.create_task(send_email(user.email, subject, html))
+
+            try:
+                from app.modules.chats.ws_manager import ws_manager
+                await ws_manager.send_notification_to_user(
+                    user.id,
+                    {
+                        "id": str(noti.id),
+                        "title": noti.title,
+                        "body": noti.body,
+                        "type": "LISTING_STATUS_CHANGE",
+                        "status": "PENDING_REVIEW",
+                        "reference_type": "listing",
+                        "reference_id": str(listing.id),
+                        "listing_id": str(listing.id),
+                        "listing_title": target_rev.title,
+                    },
+                )
+            except Exception:
+                pass
+
         self.db.add(event)
         await self.db.commit()
         await self.db.refresh(listing)

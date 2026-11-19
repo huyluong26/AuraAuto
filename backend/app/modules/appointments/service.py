@@ -7,7 +7,7 @@ from sqlalchemy.orm import selectinload
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.appointment import Appointment, AppointmentEvent
-from app.models.listing import Listing, ListingRevision
+from app.models.listing import Listing, ListingRevision, ListingStatusEvent
 from app.models.notification import Notification
 from app.models.user import User
 from app.modules.chats.ws_manager import ws_manager
@@ -295,6 +295,107 @@ class AppointmentService:
             reference_id=appt.id,
         )
         self.db.add(noti)
+
+        await self.db.commit()
+        await self.db.refresh(appt)
+        return appt
+
+    async def mark_sold_appointment(self, appointment_id: uuid.UUID, user: User) -> Appointment:
+        stmt = select(Appointment).where(Appointment.id == appointment_id).with_for_update()
+        res = await self.db.execute(stmt)
+        appt = res.scalar_one_or_none()
+
+        if not appt:
+            raise NotFoundException("Không tìm thấy lịch hẹn")
+        if appt.seller_user_id != user.id:
+            raise ForbiddenException("Chỉ người bán mới có quyền xác nhận bán xe")
+        if appt.status not in ["CONFIRMED", "COMPLETED", "PENDING"]:
+            raise ConflictException("Lịch hẹn không thể xác nhận bán xe ở trạng thái này")
+
+        old_status = appt.status
+        appt.status = "COMPLETED"
+        appt.completed_at = datetime.now(timezone.utc)
+
+        event = AppointmentEvent(
+            appointment_id=appt.id,
+            actor_user_id=user.id,
+            from_status=old_status,
+            to_status="COMPLETED",
+            note="Giao dịch thành công - Người bán xác nhận đã bán xe cho khách xem xe này",
+        )
+        self.db.add(event)
+
+        # Update the associated car listing to SOLD
+        listing_stmt = (
+            select(Listing)
+            .options(selectinload(Listing.appointments))
+            .where(Listing.id == appt.listing_id)
+            .with_for_update()
+        )
+        listing = (await self.db.execute(listing_stmt)).scalar_one_or_none()
+        if listing:
+            prev_listing_status = listing.status
+            listing.status = "SOLD"
+            listing.sold_at = datetime.now(timezone.utc)
+
+            # Cancel any other pending/confirmed appointments for this listing
+            for other_appt in listing.appointments:
+                if other_appt.id != appt.id and other_appt.status in ["PENDING", "CONFIRMED"]:
+                    other_old_status = other_appt.status
+                    other_appt.status = "CANCELLED"
+                    other_appt.cancel_reason_code = "VEHICLE_SOLD"
+                    other_appt.cancel_reason_text = "Xe đã được chủ xe giao dịch thành công cho khách hàng khác"
+                    other_appt.cancelled_by_user_id = user.id
+
+                    other_event = AppointmentEvent(
+                        appointment_id=other_appt.id,
+                        actor_user_id=user.id,
+                        from_status=other_old_status,
+                        to_status="CANCELLED",
+                        note="Xe đã bán cho người mua khác nên lịch xem xe này tự động hủy",
+                    )
+                    self.db.add(other_event)
+
+                    other_noti = Notification(
+                        user_id=other_appt.buyer_user_id,
+                        title="Lịch xem xe đã bị hủy",
+                        body="Chiếc xe bạn đặt lịch xem đã được người bán giao dịch thành công cho khách hàng khác.",
+                        type="APPOINTMENT",
+                        reference_type="appointment",
+                        reference_id=other_appt.id,
+                    )
+                    self.db.add(other_noti)
+
+            status_event = ListingStatusEvent(
+                listing_id=listing.id,
+                actor_user_id=user.id,
+                from_status=prev_listing_status,
+                to_status="SOLD",
+                reason="Giao dịch thành công qua lịch hẹn xem xe",
+            )
+            self.db.add(status_event)
+
+        # Notify buyer
+        noti = Notification(
+            user_id=appt.buyer_user_id,
+            title="Xác nhận giao dịch mua xe thành công",
+            body="Người bán đã xác nhận bạn đã mua thành công chiếc xe. Chúc mừng bạn đã sở hữu xe ưng ý!",
+            type="APPOINTMENT",
+            reference_type="appointment",
+            reference_id=appt.id,
+        )
+        self.db.add(noti)
+
+        # Notify seller
+        seller_noti = Notification(
+            user_id=appt.seller_user_id,
+            title="Giao dịch xe thành công",
+            body="Hệ thống đã cập nhật trạng thái xe sang ĐÃ BÁN và hoàn tất lịch xem xe.",
+            type="APPOINTMENT",
+            reference_type="appointment",
+            reference_id=appt.id,
+        )
+        self.db.add(seller_noti)
 
         await self.db.commit()
         await self.db.refresh(appt)

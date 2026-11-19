@@ -11,12 +11,14 @@ interface AppointmentItem {
   carTitle: string;
   carPrice: number;
   scheduledAt: string;
+  createdAt?: string;
   location: string;
   status: 'PENDING' | 'CONFIRMED' | 'COMPLETED' | 'CANCELLED';
   partnerName: string;
   partnerPhone: string;
   role: 'BUYER' | 'SELLER';
   note?: string;
+  listingStatus?: string;
 }
 
 export default function LichHenPage() {
@@ -49,14 +51,24 @@ export default function LichHenPage() {
           carTitle: a.listing?.title || 'Xe ô tô',
           carPrice: a.listing?.price_vnd || 0,
           scheduledAt: a.scheduled_at,
+          createdAt: a.created_at,
           location: a.location,
           status: a.status,
           partnerName: partner?.display_name || 'Đối tác',
           partnerPhone: partner?.phone || 'Liên hệ khi gặp',
           role: isBuyer ? 'BUYER' : 'SELLER',
           note: a.note,
+          listingStatus: a.listing?.status,
         };
       });
+
+      // Sort newest appointments first (by createdAt or scheduledAt desc)
+      mapped.sort((a, b) => {
+        const timeA = new Date(a.createdAt || a.scheduledAt).getTime();
+        const timeB = new Date(b.createdAt || b.scheduledAt).getTime();
+        return timeB - timeA;
+      });
+
       setAppointments(mapped);
     } catch {
       setAppointments([]);
@@ -103,6 +115,26 @@ export default function LichHenPage() {
       loadAppointments();
     } catch (err: any) {
       alert(err.message || 'Không thể hoàn thành');
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const handleMarkSold = async (id: string, carTitle: string) => {
+    if (
+      !confirm(
+        `Xác nhận bạn đã bán xe "${carTitle}" thành công cho khách hàng này?\n\nBuổi xem xe sẽ được hoàn tất và tin đăng xe sẽ chuyển sang trạng thái "Đã bán" trên toàn sàn AuraAuto.`
+      )
+    ) {
+      return;
+    }
+    try {
+      setActionLoading(id);
+      await api.markAppointmentSold(id);
+      await loadAppointments();
+      alert('Chúc mừng bạn! Đã xác nhận bán xe thành công và cập nhật tin đăng sang "Đã bán".');
+    } catch (err: any) {
+      alert(err.message || 'Không thể xác nhận bán xe');
     } finally {
       setActionLoading(null);
     }
@@ -231,9 +263,13 @@ export default function LichHenPage() {
                       </span>
                     )}
                     {apt.status === 'COMPLETED' && (
-                      <span className="inline-flex items-center px-2.5 py-1 rounded text-xs font-semibold bg-[#191919] text-white border border-[#191919]">
-                        <CheckCircle2 className="w-3.5 h-3.5 mr-1 text-[#b89b72]" />
-                        Đã hoàn thành
+                      <span className={`inline-flex items-center px-2.5 py-1 rounded text-xs font-semibold ${
+                        apt.listingStatus === 'SOLD'
+                          ? 'bg-emerald-50 text-emerald-800 border border-emerald-300'
+                          : 'bg-[#191919] text-white border border-[#191919]'
+                      }`}>
+                        <CheckCircle2 className={`w-3.5 h-3.5 mr-1 ${apt.listingStatus === 'SOLD' ? 'text-emerald-600' : 'text-[#b89b72]'}`} />
+                        {apt.listingStatus === 'SOLD' ? 'Đã giao dịch bán xe' : 'Đã hoàn thành'}
                       </span>
                     )}
                     {apt.status === 'CANCELLED' && (
@@ -303,13 +339,26 @@ export default function LichHenPage() {
                       </button>
                     )}
                     {apt.status === 'CONFIRMED' && (
-                      <button
-                        onClick={() => handleComplete(apt.id)}
-                        disabled={actionLoading === apt.id}
-                        className="px-4 py-2 rounded-lg text-xs font-semibold bg-[#b89b72] hover:bg-[#a3865e] text-white transition shadow-sm disabled:opacity-50"
-                      >
-                        {actionLoading === apt.id ? 'Đang xử lý...' : 'Hoàn thành xem xe'}
-                      </button>
+                      <>
+                        {apt.role === 'SELLER' && apt.listingStatus !== 'SOLD' && (
+                          <button
+                            onClick={() => handleMarkSold(apt.id, apt.carTitle)}
+                            disabled={actionLoading === apt.id}
+                            className="px-3.5 py-2 rounded-lg text-xs font-semibold bg-emerald-700 hover:bg-emerald-800 text-white transition shadow-sm disabled:opacity-50 flex items-center gap-1.5 cursor-pointer"
+                            title="Xác nhận khách đã mua xe và chuyển trạng thái tin sang Đã bán"
+                          >
+                            <CheckCircle2 className="w-3.5 h-3.5" />
+                            <span>{actionLoading === apt.id ? 'Đang xử lý...' : 'Đã bán xe'}</span>
+                          </button>
+                        )}
+                        <button
+                          onClick={() => handleComplete(apt.id)}
+                          disabled={actionLoading === apt.id}
+                          className="px-3.5 py-2 rounded-lg text-xs font-semibold bg-[#b89b72] hover:bg-[#a3865e] text-white transition shadow-sm disabled:opacity-50 cursor-pointer"
+                        >
+                          {actionLoading === apt.id ? 'Đang xử lý...' : 'Hoàn thành xem xe'}
+                        </button>
+                      </>
                     )}
                     {apt.status !== 'CANCELLED' && apt.status !== 'COMPLETED' && (
                       <button

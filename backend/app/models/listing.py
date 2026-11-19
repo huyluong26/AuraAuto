@@ -39,8 +39,11 @@ class Listing(BaseModel):
             name="ck_listing_status"
         ),
         Index("idx_listing_seller_status", "seller_user_id", "status"),
+        Index("idx_listing_seller_created", "seller_user_id", "created_at"),
+        Index("idx_listing_status_created", "status", "created_at"),
         Index("idx_listing_status_published_at", "status", "published_at"),
         Index("idx_listing_featured", "status", "is_featured", "featured_until"),
+        Index("idx_listing_featured_rank", "status", "is_featured", "published_at"),
         Index("idx_listings_published_revision", "published_revision_id"),
     )
 

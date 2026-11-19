@@ -1,8 +1,13 @@
 from fastapi import APIRouter, Depends, UploadFile, File, Form, HTTPException, status
 from typing import Optional, List
+from sqlalchemy import select, or_
+from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.database import get_db
 from app.core.deps import get_current_active_user
 from app.models.user import User
+from app.models.listing import Listing, ListingRevision, ListingMedia
+from app.models.showroom import Showroom
 from app.modules.media.schemas import (
     MediaUploadResponse,
     MediaSignUploadRequest,
@@ -10,7 +15,7 @@ from app.modules.media.schemas import (
     MediaDeleteResponse,
 )
 from app.modules.media.service import media_service
-from app.shared.exceptions import ValidationException
+from app.shared.exceptions import ValidationException, ForbiddenException
 
 router = APIRouter(prefix="/media", tags=["Media"])
 
@@ -100,12 +105,52 @@ async def sign_cloudinary_upload(
 async def delete_media_file(
     public_id: str,
     current_user: User = Depends(get_current_active_user),
+    db: AsyncSession = Depends(get_db),
 ):
     """
     Xóa file ảnh hoặc video trên Cloudinary theo public_id.
-    Yêu cầu xác thực tài khoản.
+    Yêu cầu quyền sở hữu hoặc quyền Quản trị viên.
     """
-    if not public_id.strip():
+    clean_id = public_id.strip()
+    if not clean_id:
         raise ValidationException("public_id không được để trống.")
 
-    return await media_service.delete_media(public_id=public_id)
+    is_staff = current_user.role in ("ADMIN", "INSPECTOR", "SUPPORT")
+    if not is_staff:
+        # 1. Thuộc về tin đăng của người khác
+        stmt_listing = (
+            select(Listing.seller_user_id)
+            .join(ListingRevision, Listing.id == ListingRevision.listing_id)
+            .join(ListingMedia, ListingRevision.id == ListingMedia.revision_id)
+            .where(
+                or_(
+                    ListingMedia.url.contains(clean_id),
+                    ListingMedia.thumbnail_url.contains(clean_id),
+                )
+            )
+        )
+        listing_seller_id = (await db.execute(stmt_listing)).scalars().first()
+        if listing_seller_id and listing_seller_id != current_user.id:
+            raise ForbiddenException("Bạn không có quyền xóa hình ảnh thuộc tin đăng của người khác.")
+
+        # 2. Thuộc về Showroom của người khác
+        stmt_sr = (
+            select(Showroom.owner_user_id)
+            .where(
+                or_(
+                    Showroom.logo_url.contains(clean_id),
+                    Showroom.banner_url.contains(clean_id),
+                )
+            )
+        )
+        sr_owner_id = (await db.execute(stmt_sr)).scalars().first()
+        if sr_owner_id and sr_owner_id != current_user.id:
+            raise ForbiddenException("Bạn không có quyền xóa hình ảnh thuộc Showroom của người khác.")
+
+        # 3. Thuộc về avatar của người khác
+        stmt_usr = select(User.id).where(User.avatar_url.contains(clean_id))
+        other_user_id = (await db.execute(stmt_usr)).scalars().first()
+        if other_user_id and other_user_id != current_user.id:
+            raise ForbiddenException("Bạn không có quyền xóa ảnh đại diện của người khác.")
+
+    return await media_service.delete_media(public_id=clean_id)

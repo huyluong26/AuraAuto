@@ -13,6 +13,7 @@ import { chatsApi } from './api/chats';
 import { showroomsApi } from './api/showrooms';
 import { paymentsApi } from './api/payments';
 import { adminApi } from './api/admin';
+import { notificationsApi } from './api/notifications';
 
 export { appointmentsApi } from './api/appointments';
 export { aiApi } from './api/ai';
@@ -26,6 +27,7 @@ export { chatsApi } from './api/chats';
 export { showroomsApi } from './api/showrooms';
 export { paymentsApi } from './api/payments';
 export { adminApi } from './api/admin';
+export { notificationsApi } from './api/notifications';
 
 // Consolidated Singleton API Object (maintains 100% backward compatibility)
 export const api = {
@@ -41,6 +43,7 @@ export const api = {
   ...showroomsApi,
   ...paymentsApi,
   ...adminApi,
+  ...notificationsApi,
 };
 
 export default api;

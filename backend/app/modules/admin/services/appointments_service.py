@@ -1,57 +1,22 @@
 import uuid
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timezone
 from typing import List, Optional
-from fastapi import BackgroundTasks
 from sqlalchemy import select, func, desc, or_
 from sqlalchemy.orm import selectinload
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.security import get_password_hash
-from app.core.email import send_email_sync, render_listing_status_html
-from app.core.cleanup import run_system_maintenance
 from app.core.cache import fast_cache
 from app.modules.chats.ws_manager import ws_manager
 from app.models.user import User
-from app.models.listing import Listing, ListingRevision, ListingStatusEvent, ListingMedia
+from app.models.listing import Listing, ListingRevision
 from app.models.appointment import Appointment, AppointmentEvent
-from app.models.showroom import Showroom
 from app.models.notification import Notification
-from app.models.catalog import VehicleBrand
-from app.models.payment import PaymentTransaction, PromotionPackage
-from app.modules.payments.service import payment_service
 from app.modules.admin.schemas import (
-    AdminMetricsResponse,
-    RejectListingRequest,
-    TakeDownListingRequest,
-    SubmitInspectionRequest,
-    AdminUpdateListingRequest,
-    VerifyShowroomRequest,
-    UpdateUserStatusRequest,
-    BulkUpdateUserStatusRequest,
-    BulkUpdateShowroomStatusRequest,
-    BulkVerifyShowroomRequest,
-    BulkDeleteShowroomRequest,
-    UpdateUserRoleRequest,
-    AdminCreateUserRequest,
-    AdminUpdateUserRequest,
-    AdminCreateShowroomRequest,
-    AdminUpdateShowroomRequest,
-    AdminListingItemResponse,
-    AdminListingDetailResponse,
     AdminAppointmentItemResponse,
     AdminAppointmentParticipant,
     AdminAppointmentListingBrief,
     AdminCancelAppointmentRequest,
-    AdminPromotionPackageResponse,
-    AdminCreatePromotionPackageRequest,
-    AdminUpdatePromotionPackageRequest,
-    AdminFeaturedListingItemResponse,
-    AdminGrantFeaturedRequest,
-    AdminRevokeFeaturedRequest,
-    AdminPaymentTransactionItemResponse,
-    AdminPromotionsOverviewResponse,
 )
-from app.modules.auth.schemas import UserBriefResponse, ShowroomBriefResponse
 from app.shared.exceptions import NotFoundException, ConflictException, ForbiddenException
 from app.shared.schemas import SuccessResponse
 
@@ -78,7 +43,7 @@ class AdminAppointmentsMixin:
                 selectinload(Appointment.seller),
                 selectinload(Appointment.listing).selectinload(Listing.published_revision).selectinload(ListingRevision.media),
             )
-            .order_by(Appointment.scheduled_at.desc())
+            .order_by(Appointment.created_at.desc(), Appointment.scheduled_at.desc())
         )
 
         if status_filter:
@@ -138,6 +103,19 @@ class AdminAppointmentsMixin:
                 )
             )
         return results
+
+    async def get_appointments_tab_counts(self) -> dict:
+        stmt = select(Appointment.status, func.count(Appointment.id)).group_by(Appointment.status)
+        res = await self.db.execute(stmt)
+        counts = {row[0]: int(row[1]) for row in res.all()}
+        total = sum(counts.values())
+        return {
+            "ALL": total,
+            "PENDING": counts.get("PENDING", 0),
+            "CONFIRMED": counts.get("CONFIRMED", 0),
+            "COMPLETED": counts.get("COMPLETED", 0),
+            "CANCELLED": counts.get("CANCELLED", 0),
+        }
 
     async def get_appointment_detail(self, id: uuid.UUID) -> AdminAppointmentItemResponse:
         db = self.db

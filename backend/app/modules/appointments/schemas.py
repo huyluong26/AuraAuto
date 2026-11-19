@@ -39,6 +39,7 @@ class AppointmentListingBrief(BaseModel):
     id: uuid.UUID
     title: str
     price_vnd: int
+    status: Optional[str] = None
 
 
 class AppointmentResponse(BaseModel):

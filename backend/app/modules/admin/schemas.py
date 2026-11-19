@@ -42,6 +42,7 @@ class AdminMetricsResponse(BaseModel):
     published_listings: int
     sold_listings: int
     rejected_listings: int = 0
+    draft_listings: int = 0
     total_appointments: int
     pending_appointments: int = 0
     confirmed_appointments: int = 0

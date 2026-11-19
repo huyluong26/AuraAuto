@@ -1,4 +1,13 @@
-import { API_BASE, authFetch, getClientCache, setClientCache, clearAuthSession, parseApiError } from './core';
+import {
+  API_BASE,
+  authFetch,
+  getClientCache,
+  setClientCache,
+  invalidateClientCache,
+  deduplicatedFetch,
+  clearAuthSession,
+  parseApiError,
+} from './core';
 import {
   ListingItem,
   ListingDetail,
@@ -132,7 +141,7 @@ export const listingsApi = {
     return res.json();
   },
 
-  async getMyListingsSummary(): Promise<{
+  async getMyListingsSummary(forceRefresh: boolean = false): Promise<{
     total_listings: number;
     published_listings: number;
     pending_listings: number;
@@ -159,12 +168,22 @@ export const listingsApi = {
     };
     if (!token) return defaultSummary;
 
-    const res = await authFetch(`${API_BASE}/listings/me/summary`, {
-      headers: { Authorization: `Bearer ${token}` },
-      cache: 'no-store',
+    const cacheKey = 'listings:my_summary';
+    if (!forceRefresh) {
+      const cached = getClientCache<typeof defaultSummary>(cacheKey);
+      if (cached) return cached;
+    }
+
+    return deduplicatedFetch(cacheKey, async () => {
+      const res = await authFetch(`${API_BASE}/listings/me/summary`, {
+        headers: { Authorization: `Bearer ${token}` },
+        cache: 'no-store',
+      });
+      if (!res.ok) return defaultSummary;
+      const data = await res.json();
+      setClientCache(cacheKey, data, 15);
+      return data;
     });
-    if (!res.ok) return defaultSummary;
-    return res.json();
   },
 
   async toggleHideListing(id: string): Promise<any> {
@@ -178,6 +197,7 @@ export const listingsApi = {
       const err = await res.json().catch(() => ({}));
       throw new Error(err?.error?.message || err?.message || 'Không thể thay đổi trạng thái ẩn/hiện');
     }
+    invalidateClientCache('listings:my_summary');
     return res.json();
   },
 
@@ -192,6 +212,7 @@ export const listingsApi = {
       const err = await res.json().catch(() => ({}));
       throw new Error(err?.error?.message || err?.message || 'Không thể mở bán lại tin');
     }
+    invalidateClientCache('listings:my_summary');
     return res.json();
   },
 
@@ -206,6 +227,7 @@ export const listingsApi = {
       const err = await res.json().catch(() => ({}));
       throw new Error(err?.error?.message || err?.message || 'Không thể xóa tin đăng');
     }
+    invalidateClientCache('listings:my_summary');
     return res.json();
   },
 
@@ -234,6 +256,7 @@ export const listingsApi = {
       const err = await res.json().catch(() => ({}));
       throw new Error(err?.error?.message || err?.message || 'Không thể cập nhật tin đăng');
     }
+    invalidateClientCache('listings:my_summary');
     return res.json();
   },
 
@@ -255,6 +278,7 @@ export const listingsApi = {
       const err = await res.json().catch(() => ({}));
       throw new Error(err?.error?.message || err?.message || 'Không thể cập nhật tin đăng');
     }
+    invalidateClientCache('listings:my_summary');
     return res.json();
   },
 
@@ -269,6 +293,7 @@ export const listingsApi = {
       const err = await res.json().catch(() => ({}));
       throw new Error(err?.error?.message || err?.message || 'Không thể đánh dấu đã bán');
     }
+    invalidateClientCache('listings:my_summary');
     return res.json();
   },
 

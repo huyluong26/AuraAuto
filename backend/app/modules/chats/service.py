@@ -1,6 +1,6 @@
 import uuid
 from datetime import datetime, timezone
-from typing import List, Tuple
+from typing import List, Tuple, Optional
 from sqlalchemy import select, or_, and_, desc, func
 from sqlalchemy.orm import selectinload
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -100,7 +100,7 @@ class ChatService:
 
         return msg
 
-    async def list_user_conversations(self, user: User) -> List[ConversationResponse]:
+    async def list_user_conversations(self, user: User, conversation_id: Optional[uuid.UUID] = None) -> List[ConversationResponse]:
         stmt = (
             select(Conversation)
             .options(
@@ -117,8 +117,38 @@ class ChatService:
             )
             .order_by(desc(Conversation.last_message_at))
         )
+        if conversation_id:
+            stmt = stmt.where(Conversation.id == conversation_id)
+
         res = await self.db.execute(stmt)
         convs = res.scalars().all()
+        if not convs:
+            return []
+
+        conv_ids = [c.id for c in convs]
+
+        # Batch query 1: Read receipts cho tất cả conversations
+        read_stmt = select(ConversationRead).where(
+            ConversationRead.conversation_id.in_(conv_ids),
+            ConversationRead.user_id == user.id,
+        )
+        read_rows = (await self.db.execute(read_stmt)).scalars().all()
+        read_map = {r.conversation_id: r.last_read_at for r in read_rows}
+
+        # Batch query 2: Tin nhắn chưa đọc cho tất cả conversations (2 truy vấn thay vì 2*N)
+        msg_stmt = (
+            select(Message.conversation_id, Message.created_at)
+            .where(
+                Message.conversation_id.in_(conv_ids),
+                Message.sender_user_id != user.id,
+            )
+        )
+        msg_rows = (await self.db.execute(msg_stmt)).all()
+        unread_counts = {cid: 0 for cid in conv_ids}
+        for cid, created_at in msg_rows:
+            last_read = read_map.get(cid)
+            if not last_read or created_at > last_read:
+                unread_counts[cid] += 1
 
         results = []
         for c in convs:
@@ -128,23 +158,7 @@ class ChatService:
             if rev and rev.media:
                 primary_img = rev.media[0].url
 
-            # Real unread count computation
-            read_stmt = select(ConversationRead).where(
-                ConversationRead.conversation_id == c.id,
-                ConversationRead.user_id == user.id,
-            )
-            read_res = await self.db.execute(read_stmt)
-            read_rec = read_res.scalar_one_or_none()
-
-            unread_stmt = select(func.count(Message.id)).where(
-                Message.conversation_id == c.id,
-                Message.sender_user_id != user.id,
-            )
-            if read_rec and read_rec.last_read_at:
-                unread_stmt = unread_stmt.where(Message.created_at > read_rec.last_read_at)
-
-            cnt_res = await self.db.execute(unread_stmt)
-            unread_cnt = cnt_res.scalar_one() or 0
+            unread_cnt = unread_counts.get(c.id, 0)
 
             results.append(
                 ConversationResponse(

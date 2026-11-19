@@ -4,7 +4,7 @@ import HeroSearchFilter from './HeroSearchFilter';
 
 export default function HeroSection() {
   return (
-    <section className="relative w-full overflow-hidden bg-primary-container -mt-16 sm:-mt-20 pt-16 sm:pt-20">
+    <section className="relative w-full overflow-hidden bg-primary-container pt-16 sm:pt-20">
       <div className="relative w-full min-h-[640px] lg:h-[760px] flex items-center">
         {/* Background Luxury Visual with Gradient Scrim */}
         <div

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import Link from 'next/link';
 import { AdminHeader } from '@/features/admin/components/AdminHeader';
 import { AdminTable } from '@/features/admin/components/ui/AdminTable';
@@ -21,6 +21,7 @@ export default function AdminArticlesPage() {
     setStatusFilter,
     searchKeyword,
     setSearchKeyword,
+    tabCounts,
     loadArticles,
     handleCreateArticle,
     handleUpdateArticle,
@@ -31,12 +32,12 @@ export default function AdminArticlesPage() {
   const [showEditorModal, setShowEditorModal] = useState(false);
   const [selectedArticle, setSelectedArticle] = useState<AdminArticleItem | null>(null);
 
-  const ARTICLE_TABS = [
-    { label: 'Tất cả bài viết', value: 'ALL' },
-    { label: 'Đã xuất bản', value: 'PUBLISHED' },
-    { label: 'Chờ duyệt', value: 'PENDING_REVIEW' },
-    { label: 'Bản nháp', value: 'DRAFT' },
-  ];
+  const ARTICLE_TABS = useMemo(() => [
+    { label: 'Tất cả bài viết', value: 'ALL', count: tabCounts.ALL },
+    { label: 'Đã xuất bản', value: 'PUBLISHED', count: tabCounts.PUBLISHED },
+    { label: 'Chờ duyệt', value: 'PENDING_REVIEW', count: tabCounts.PENDING_REVIEW, badgeVariant: 'warning' as const },
+    { label: 'Bản nháp', value: 'DRAFT', count: tabCounts.DRAFT },
+  ], [tabCounts]);
 
   const columns: TableColumn<AdminArticleItem>[] = [
     {

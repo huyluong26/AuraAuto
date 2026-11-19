@@ -100,6 +100,7 @@ async def mark_all_notifications_read(
 
 
 @router.post("/{id}/read", response_model=SuccessResponse)
+@router.patch("/{id}/read", response_model=SuccessResponse)
 async def mark_notification_read(
     id: uuid.UUID,
     current_user: User = Depends(get_current_active_user),
